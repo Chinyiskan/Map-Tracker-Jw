@@ -363,44 +363,60 @@ export class BarriosProgressChart {
    * @param {boolean} silent - Si es true, no muestra spinner de carga completo
    */
   async loadData(silent = false) {
-    if (this.isLoading) return;
+    if (this.isLoading) {
+      console.log('⏳ [BARRIOS-CHART] Ya hay una carga en progreso, omitiendo...');
+      return;
+    }
     
     this.isLoading = true;
+    console.log(`🚀 [BARRIOS-CHART] Iniciando carga de datos (silent: ${silent})`);
     
     // Solo mostrar spinner si no hay datos o no es actualización silenciosa
     if (!silent && (!this.data || this.data.length === 0)) {
+      console.log('🔄 [BARRIOS-CHART] Mostrando indicador de carga');
       this.showLoading();
     } else if (silent) {
+      console.log('🔄 [BARRIOS-CHART] Mostrando indicador de actualización silenciosa');
       this.showRefreshIndicator(); // Indicador discreto para actualizaciones
     }
     
     try {
-      console.log('🚀 Intentando cargar progreso usando endpoint agregado optimizado');
+      console.log('🚀 [BARRIOS-CHART] Intentando cargar progreso usando endpoint agregado optimizado');
       
       // OPTIMIZACIÓN SPRINT 1: Usar endpoint agregado primero
       let newData = await this._loadDataFromAggregatedEndpoint();
       
       // Si el endpoint agregado falla, usar fallback a endpoints individuales
       if (!newData || newData.length === 0) {
-        console.log('⚠️ Fallback a endpoints individuales');
+        console.log('⚠️ [BARRIOS-CHART] Fallback a endpoints individuales');
         newData = await this._loadDataFromIndividualEndpoints();
       }
       
-      console.log(`✅ Datos cargados para ${newData.length} barrios usando método optimizado`);
+      if (!newData || newData.length === 0) {
+        console.error('❌ [BARRIOS-CHART] No se pudieron cargar datos de ninguna fuente');
+        this.showError('No se pudieron cargar los datos de progreso');
+        return;
+      }
+      
+      console.log(`✅ [BARRIOS-CHART] Datos cargados para ${newData.length} barrios usando método optimizado`);
       
       // Verificar si los datos han cambiado antes de renderizar
       if (this._hasDataChanged(newData)) {
+        console.log('🔄 [BARRIOS-CHART] Los datos han cambiado, renderizando...');
         this.data = newData;
         this.previousDataHash = this._generateDataHash(newData);
         this.renderChart();
+      } else {
+        console.log('⏭️ [BARRIOS-CHART] Los datos no han cambiado, omitiendo renderizado');
       }
-      // OPTIMIZADO: Removido log repetitivo de "renderizado omitido"
       
     } catch (error) {
-      console.error('❌ Error cargando datos:', error);
-      this.showError('Error al cargar los datos');
+      console.error('❌ [BARRIOS-CHART] Error cargando datos:', error);
+      console.error('❌ [BARRIOS-CHART] Stack trace completo:', error.stack);
+      this.showError('Error al cargar los datos de progreso');
     } finally {
       this.isLoading = false;
+      console.log('🏁 [BARRIOS-CHART] Finalizando carga de datos');
       if (silent) {
         this.hideRefreshIndicator();
       }
@@ -430,11 +446,14 @@ export class BarriosProgressChart {
    */
   async _loadDataFromAggregatedEndpoint() {
     try {
-      console.log('🚀 Usando endpoint agregado: /api/ciclos/progreso');
+      console.log('🚀 [BARRIOS-CHART] Usando endpoint agregado: /api/ciclos/progreso');
+      console.log('🌐 [BARRIOS-CHART] URL actual:', window.location.href);
+      console.log('🔧 [BARRIOS-CHART] Timeout configurado:', this.config.api.timeout);
       
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), this.config.api.timeout);
       
+      const startTime = Date.now();
       const response = await fetch('/api/ciclos/progreso', {
         signal: controller.signal,
         headers: {
@@ -443,23 +462,49 @@ export class BarriosProgressChart {
       });
       
       clearTimeout(timeoutId);
+      const responseTime = Date.now() - startTime;
+      
+      console.log(`⏱️ [BARRIOS-CHART] Tiempo de respuesta: ${responseTime}ms`);
+      console.log(`📡 [BARRIOS-CHART] Status HTTP: ${response.status} ${response.statusText}`);
+      console.log(`📋 [BARRIOS-CHART] Headers de respuesta:`, Object.fromEntries(response.headers.entries()));
       
       if (!response.ok) {
-        console.warn(`⚠️ Endpoint agregado falló: HTTP ${response.status}`);
+        console.error(`❌ [BARRIOS-CHART] Endpoint agregado falló: HTTP ${response.status} ${response.statusText}`);
+        
+        // Intentar leer el cuerpo de la respuesta para más detalles
+        try {
+          const errorText = await response.text();
+          console.error(`📄 [BARRIOS-CHART] Cuerpo de error:`, errorText);
+        } catch (e) {
+          console.error(`📄 [BARRIOS-CHART] No se pudo leer el cuerpo de error:`, e.message);
+        }
+        
         return null;
       }
       
       const result = await response.json();
+      console.log(`📦 [BARRIOS-CHART] Respuesta completa:`, result);
       
-      if (!result.success || !result.data || !Array.isArray(result.data)) {
-        console.warn('⚠️ Respuesta inválida del endpoint agregado');
+      if (!result.success) {
+        console.error('❌ [BARRIOS-CHART] API reportó fallo:', result.error || 'Error desconocido');
         return null;
       }
       
-      console.log(`✅ Endpoint agregado exitoso: ${result.data.length} barrios cargados`);
+      if (!result.data) {
+        console.error('❌ [BARRIOS-CHART] No hay datos en la respuesta');
+        return null;
+      }
+      
+      if (!Array.isArray(result.data)) {
+        console.error('❌ [BARRIOS-CHART] Los datos no son un array:', typeof result.data, result.data);
+        return null;
+      }
+      
+      console.log(`✅ [BARRIOS-CHART] Endpoint agregado exitoso: ${result.data.length} barrios cargados`);
+      console.log(`📊 [BARRIOS-CHART] Datos de barrios:`, result.data.map(b => ({ barrio: b.barrio, progreso: b.progreso_porcentaje })));
       
       // Adaptar formato si es necesario
-      return result.data.map(item => ({
+      const adaptedData = result.data.map(item => ({
         barrio: item.barrio,
         numero_ciclo: item.numero_ciclo || 1,
         total_territorios: item.total_territorios || 0,
@@ -468,8 +513,22 @@ export class BarriosProgressChart {
         estado: item.estado || 'sin_ciclo'
       }));
       
+      console.log(`🔄 [BARRIOS-CHART] Datos adaptados:`, adaptedData.length, 'elementos');
+      return adaptedData;
+      
     } catch (error) {
-      console.warn('⚠️ Error en endpoint agregado:', error.message);
+      console.error('❌ [BARRIOS-CHART] Error en endpoint agregado:', error);
+      console.error('❌ [BARRIOS-CHART] Stack trace:', error.stack);
+      console.error('❌ [BARRIOS-CHART] Tipo de error:', error.name);
+      
+      // Información adicional del entorno
+      console.error('🌍 [BARRIOS-CHART] Entorno:', {
+        userAgent: navigator.userAgent,
+        url: window.location.href,
+        protocol: window.location.protocol,
+        host: window.location.host
+      });
+      
       return null;
     }
   }
@@ -609,9 +668,16 @@ export class BarriosProgressChart {
    * Renderizar el gráfico de barras
    */
   renderChart() {
+    console.log('🎨 [BARRIOS-CHART] Iniciando renderizado del gráfico');
     const contentElement = this.container.querySelector('.barrios-progress-chart__content');
     
+    if (!contentElement) {
+      console.error('❌ [BARRIOS-CHART] No se encontró el elemento contenedor de contenido');
+      return;
+    }
+    
     if (!this.data || this.data.length === 0) {
+      console.warn('⚠️ [BARRIOS-CHART] No hay datos para renderizar');
       contentElement.innerHTML = `
         <div class="barrios-progress-chart__empty">
           <p>No hay datos disponibles</p>
@@ -620,10 +686,15 @@ export class BarriosProgressChart {
       return;
     }
     
+    console.log(`📊 [BARRIOS-CHART] Renderizando ${this.data.length} barrios`);
+    console.log('📊 [BARRIOS-CHART] Datos a renderizar:', this.data);
+    
     // Ordenar barrios alfabéticamente de A a Z
     const sortedData = [...this.data].sort((a, b) => 
       a.barrio.localeCompare(b.barrio, 'es', { sensitivity: 'base' })
     );
+    
+    console.log('📊 [BARRIOS-CHART] Datos ordenados:', sortedData);
     
     // Renderizar estadísticas
     this.renderStats(sortedData);
@@ -669,10 +740,15 @@ export class BarriosProgressChart {
       </div>
     `;
     
+    console.log('✅ [BARRIOS-CHART] HTML del gráfico generado e insertado');
+    
     // Animar las barras si está habilitado
     if (this.config.animations) {
+      console.log('🎬 [BARRIOS-CHART] Iniciando animaciones');
       this.animateBars();
     }
+    
+    console.log('🎨 [BARRIOS-CHART] Renderizado completado exitosamente');
   }
   
   /**
@@ -796,10 +872,17 @@ export class BarriosProgressChart {
    * Mostrar error
    */
   showError(message) {
+    console.error(`❌ [BARRIOS-CHART] Mostrando error: ${message}`);
+    console.error(`❌ [BARRIOS-CHART] Entorno: ${window.location.hostname}`);
+    console.error(`❌ [BARRIOS-CHART] URL actual: ${window.location.href}`);
+    
     const contentElement = this.container.querySelector('.barrios-progress-chart__content');
+    const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    
     contentElement.innerHTML = `
       <div class="barrios-progress-chart__error">
         <p>❌ ${message}</p>
+        ${isDev ? `<p style="font-size: 0.8em; color: #666; margin-top: 8px;">Entorno: ${window.location.hostname}</p>` : ''}
         <button onclick="this.closest('.barrios-progress-chart').dispatchEvent(new CustomEvent('retry'))" 
                 style="margin-top: var(--space-sm); padding: var(--space-xs) var(--space-sm); 
                        background: var(--accent-primary); color: white; border: none; 
@@ -811,6 +894,7 @@ export class BarriosProgressChart {
     
     // Agregar listener para reintentar
     this.container.addEventListener('retry', () => {
+      console.log('🔄 [BARRIOS-CHART] Usuario solicitó reintento');
       this.loadData();
     }, { once: true });
   }

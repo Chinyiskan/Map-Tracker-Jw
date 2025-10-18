@@ -29,6 +29,9 @@ import manzanasRoutes from './infrastructure/web/routes/manzanas.js';
 // OPTIMIZACIÓN SPRINT 3: Rutas de métricas
 import metricsRoutes from './infrastructure/web/routes/metrics.js';
 
+// Rutas de diagnóstico (temporal para debugging)
+import diagnosticoRoutes from './infrastructure/web/routes/diagnostico.js';
+
 // Importar contenedor de dependencias
 import container from './infrastructure/container.js';
 
@@ -188,6 +191,9 @@ app.use('/api/manzanas', manzanasRoutes);
 
 // OPTIMIZACIÓN SPRINT 3: Métricas del sistema
 app.use('/api/metrics', metricsRoutes);
+
+// Rutas de diagnóstico (temporal para debugging)
+app.use('/api/diagnostico', diagnosticoRoutes);
 
 // Registrar rutas legacy
 app.use('/api/auth', authRoutes);
