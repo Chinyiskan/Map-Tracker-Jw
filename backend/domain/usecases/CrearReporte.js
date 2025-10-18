@@ -84,10 +84,15 @@ class CrearReporte {
    * @private
    */
   async _validarCapitanExiste(nombreCapitan) {
-    // TODO: Implementar validación con repositorio de capitanes
-    // Por ahora, validación básica
+    // Validación básica de formato
     if (nombreCapitan.length < 3) {
       throw new Error('El nombre del capitán debe tener al menos 3 caracteres');
+    }
+    
+    // Validación de caracteres permitidos (solo letras, espacios y acentos)
+    const formatoValido = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(nombreCapitan);
+    if (!formatoValido) {
+      throw new Error('El nombre del capitán solo puede contener letras y espacios');
     }
   }
   

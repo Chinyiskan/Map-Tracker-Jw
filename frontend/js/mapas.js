@@ -1000,8 +1000,8 @@ export const MapasManager = {
     const total = this._state.territories.length;
     const progress = total > 0 ? Math.round((trabajadas / total) * 100) : 0;
     
-    // Debug logging
-    console.log(`🔍 Debug Progreso ${barrio}:`, {
+    // Progreso logging
+    console.log(`📊 Progreso ${barrio}:`, {
       trabajadas,
       total,
       progress,
@@ -1172,7 +1172,7 @@ export const MapasManager = {
   _matchTerritoryWithReporte(territory, reporte) {
     // CORREGIDO: Usar campo 'manzanas' en lugar de 'territorio'
     if (!reporte.manzanas) {
-      console.log('🔍 DEBUG: Reporte sin manzanas:', reporte.id);
+      console.log('⚠️ Reporte sin manzanas:', reporte.id);
       return false;
     }
     
@@ -1183,7 +1183,7 @@ export const MapasManager = {
     // Extraer código de manzana del ID (ej: "manzana-Z-177" -> "Z-177")
     const territoryCode = territoryId.replace('manzana-', '');
     
-    console.log('🔍 DEBUG: Comparando territorio:', {
+    console.log('🔍 Comparando territorio:', {
       territoryId,
       territoryCode,
       territoryNumber,
@@ -1203,7 +1203,7 @@ export const MapasManager = {
       );
       
       if (isMatch) {
-        console.log('✅ DEBUG: MATCH encontrado:', {
+        console.log('✅ MATCH encontrado:', {
           manzana,
           territoryCode,
           territoryId,

@@ -13,6 +13,7 @@ Thumbs.db
 # Archivos de log y debug
 *.log
 debug.txt
+consola.txt
 logs/
 
 # Archivos temporales

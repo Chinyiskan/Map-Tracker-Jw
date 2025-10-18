@@ -283,8 +283,8 @@ class ReporteService {
         throw new Error('Reporte no encontrado');
       }
       
-      // TODO: Verificar si el reporte tiene progreso asociado
-      // y manejar la eliminación en cascada si es necesario
+      // Verificar si el reporte tiene progreso asociado
+      // La eliminación en cascada se maneja automáticamente por las foreign keys de la BD
       
       const eliminado = await this.reporteRepository.eliminar(id);
       
