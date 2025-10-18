@@ -55,6 +55,7 @@ const app = express();
 // CORS - Permitir solicitudes desde el frontend
 app.use(cors({
   origin: [
+    // Desarrollo local
     'http://localhost:3000',
     'http://localhost:3001',
     'http://localhost:3002',
@@ -72,7 +73,11 @@ app.use(cors({
     'http://127.0.0.1:3005',
     'http://127.0.0.1:3006',
     'http://127.0.0.1:3007',
-    'http://127.0.0.1:5501'
+    'http://127.0.0.1:5501',
+    // Producción Vercel
+    'https://map-tracker-jw.vercel.app',
+    'https://map-tracker-jw-git-main.vercel.app',
+    'https://map-tracker-jw-*.vercel.app'
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],

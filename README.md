@@ -301,10 +301,52 @@ npm run test:watch
 
 ### Vercel (Recomendado)
 
+#### 🔧 Configuración Inicial
 1. **Fork** este repositorio
 2. Conecta tu cuenta de **Vercel** con GitHub
-3. Configura las **variables de entorno** en Vercel
+3. Importa el proyecto en Vercel
 4. **Deploy automático** en cada push
+
+#### ⚠️ CRÍTICO: Variables de Entorno en Vercel
+
+**IMPORTANTE**: Para que el login funcione en producción, debes configurar estas variables en Vercel:
+
+```env
+# 🔐 Autenticación (OBLIGATORIAS)
+ADMIN_USERNAME=Admin
+ADMIN_PASSWORD=Jw_1914
+
+# 🗄️ Base de Datos
+SUPABASE_URL=https://sornquimztfbrcxwjirl.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=tu_service_role_key
+
+# 📧 Correo Electrónico
+EMAIL_DESTINO=admin@empresa.com
+EMAIL_USER=noreply@empresa.com
+EMAIL_PASS=secure_app_password
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+
+# 🌍 Entorno
+NODE_ENV=production
+```
+
+#### 📋 Pasos para Configurar Variables en Vercel:
+
+1. Ve a tu proyecto en [vercel.com](https://vercel.com)
+2. **Settings** → **Environment Variables**
+3. Agrega **cada variable** de la lista anterior
+4. Selecciona **Production** para cada variable
+5. **Redeploy** la aplicación (sin caché)
+
+#### 🚨 Troubleshooting
+
+**Error: "Error de conexión. Intente nuevamente."**
+- ✅ Verifica que TODAS las variables estén en Vercel
+- ✅ Redesplega después de agregar variables
+- ✅ Revisa que `ADMIN_USERNAME=Admin` (con mayúscula)
+
+📖 **Guía completa**: [docs/CONFIGURACION_VERCEL_PRODUCCION.md](docs/CONFIGURACION_VERCEL_PRODUCCION.md)
 
 ### Manual
 

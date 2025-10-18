@@ -12,14 +12,32 @@ const router = express.Router();
  */
 router.post('/login', (req, res) => {
   try {
+    console.log('🔐 === INICIO DE LOGIN ===');
+    console.log('🌐 Entorno:', process.env.NODE_ENV);
+    console.log('🔧 Vercel:', process.env.VERCEL ? 'SÍ' : 'NO');
+    console.log('📋 Headers recibidos:', JSON.stringify(req.headers, null, 2));
+    console.log('📦 Body recibido:', JSON.stringify(req.body, null, 2));
+    
     const { username, password } = req.body;
     
-    // Debug logs
+    // Debug logs detallados
     console.log('🔐 Intento de login:');
-    console.log('  - Usuario recibido:', username);
-    console.log('  - Contraseña recibida:', password);
-    console.log('  - Usuario esperado:', process.env.ADMIN_USERNAME);
-    console.log('  - Contraseña esperada:', process.env.ADMIN_PASSWORD);
+    console.log('  - Usuario recibido:', username, '(tipo:', typeof username, ')');
+    console.log('  - Contraseña recibida:', password, '(tipo:', typeof password, ')');
+    console.log('  - Usuario esperado:', process.env.ADMIN_USERNAME, '(tipo:', typeof process.env.ADMIN_USERNAME, ')');
+    console.log('  - Contraseña esperada:', process.env.ADMIN_PASSWORD, '(tipo:', typeof process.env.ADMIN_PASSWORD, ')');
+    
+    // Verificar variables de entorno
+    if (!process.env.ADMIN_USERNAME || !process.env.ADMIN_PASSWORD) {
+      console.error('❌ Variables de entorno no configuradas');
+      console.error('  - ADMIN_USERNAME:', !!process.env.ADMIN_USERNAME);
+      console.error('  - ADMIN_PASSWORD:', !!process.env.ADMIN_PASSWORD);
+      return res.status(500).json({
+        success: false,
+        message: 'Error de configuración del servidor',
+        error: 'Variables de entorno no configuradas'
+      });
+    }
     
     // Validar que se envíen los campos requeridos
     if (!username || !password) {
@@ -38,11 +56,14 @@ router.post('/login', (req, res) => {
       // Generar token simple pero seguro
       const token = generateSecureToken();
       
-      res.json({
+      const response = {
         success: true,
         token: token,
         message: 'Autenticación exitosa'
-      });
+      };
+      
+      console.log('📤 Enviando respuesta exitosa:', JSON.stringify(response, null, 2));
+      res.json(response);
     } else {
       // Credenciales incorrectas
       console.log('❌ Credenciales incorrectas');
@@ -52,10 +73,20 @@ router.post('/login', (req, res) => {
       });
     }
   } catch (error) {
-    console.error('Error en autenticación:', error);
+    console.error('💥 Error crítico en autenticación:', error);
+    console.error('📍 Stack trace:', error.stack);
+    console.error('🔍 Request info:', {
+      method: req.method,
+      url: req.url,
+      headers: req.headers,
+      body: req.body
+    });
+    
     res.status(500).json({
       success: false,
-      message: 'Error interno del servidor'
+      message: 'Error interno del servidor',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Error interno',
+      timestamp: new Date().toISOString()
     });
   }
 });

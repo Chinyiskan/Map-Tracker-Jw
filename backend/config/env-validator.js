@@ -36,7 +36,24 @@ export function validateEnvironment() {
   if (missing.length > 0) {
     const errorMessage = `❌ Variables de entorno faltantes o vacías: ${missing.join(', ')}`;
     console.error(errorMessage);
-    console.error('💡 Asegúrate de que todas las variables estén definidas en el archivo .env');
+    
+    // Mensaje específico para producción/Vercel
+    if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
+      console.error('🚨 ERROR CRÍTICO EN PRODUCCIÓN:');
+      console.error('   Las variables de entorno no están configuradas en Vercel.');
+      console.error('   Esto causará fallos en el login y otras funcionalidades.');
+      console.error('');
+      console.error('📋 SOLUCIÓN:');
+      console.error('   1. Ve a tu proyecto en vercel.com');
+      console.error('   2. Settings → Environment Variables');
+      console.error('   3. Agrega TODAS las variables faltantes');
+      console.error('   4. Redesplega la aplicación');
+      console.error('');
+      console.error('📖 Guía completa: docs/CONFIGURACION_VERCEL_PRODUCCION.md');
+    } else {
+      console.error('💡 Asegúrate de que todas las variables estén definidas en el archivo .env');
+    }
+    
     throw new Error(errorMessage);
   }
   
@@ -45,6 +62,7 @@ export function validateEnvironment() {
   // Validaciones adicionales
   validateEmailConfiguration();
   validateSupabaseConfiguration();
+  validateAuthenticationConfiguration();
 }
 
 /**
@@ -92,6 +110,35 @@ function validateSupabaseConfiguration() {
   }
   
   console.log('✅ Configuración de Supabase validada');
+}
+
+/**
+ * Valida la configuración específica de autenticación
+ * @throws {Error} Si la configuración de autenticación es inválida
+ */
+function validateAuthenticationConfiguration() {
+  const username = process.env.ADMIN_USERNAME;
+  const password = process.env.ADMIN_PASSWORD;
+  
+  // Validar formato del username
+  if (!username || username.length < 3) {
+    throw new Error('❌ ADMIN_USERNAME debe tener al menos 3 caracteres');
+  }
+  
+  // Validar formato de la contraseña
+  if (!password || password.length < 6) {
+    throw new Error('❌ ADMIN_PASSWORD debe tener al menos 6 caracteres');
+  }
+  
+  // Advertencia específica para producción
+  if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
+    if (username !== 'Admin' || password !== 'Jw_1914') {
+      console.warn('⚠️  ADVERTENCIA: Las credenciales en producción no coinciden con las esperadas.');
+      console.warn('   Asegúrate de que ADMIN_USERNAME=Admin y ADMIN_PASSWORD=Jw_1914');
+    }
+  }
+  
+  console.log('✅ Configuración de autenticación validada');
 }
 
 /**
