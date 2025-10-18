@@ -170,11 +170,9 @@ export function showEnvironmentSummary() {
   console.log(`   • Variables: ${info.configuredVariables}/${info.totalVariables} configuradas`);
 }
 
-// Exportar también como CommonJS para compatibilidad
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = {
-    validateEnvironment,
-    getEnvironmentInfo,
-    showEnvironmentSummary
-  };
-}
+// Exportación por defecto para compatibilidad
+export default {
+  validateEnvironment,
+  getEnvironmentInfo,
+  showEnvironmentSummary
+};

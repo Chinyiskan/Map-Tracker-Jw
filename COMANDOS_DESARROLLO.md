@@ -2,7 +2,20 @@
 
 ## 📋 Comandos Principales
 
-### **Iniciar Servidor**
+### **🎯 COMANDOS UNIFICADOS (RECOMENDADOS)**
+
+```bash
+# 🔥 DESARROLLO COMPLETO - Inicia todo de una vez con auto-reload
+npm run dev:full
+
+# 🚀 DESARROLLO CON AUTO-PORT - Detecta puerto disponible automáticamente
+npm run dev:complete
+
+# 📦 PRODUCCIÓN COMPLETA - Inicia todo en modo producción
+npm run start:full
+```
+
+### **Iniciar Servidor (Comandos Individuales)**
 
 ```bash
 # Iniciar en puerto por defecto (3002)
@@ -43,6 +56,29 @@ npm run dev:3001
 npm run dev:3002
 npm run dev:3003
 ```
+
+---
+
+## 📖 Explicación de Comandos Unificados
+
+### **`npm run dev:full`** 
+- ✅ **Inicia:** Backend + Frontend en un solo comando
+- ✅ **Auto-reload:** Reinicia automáticamente al cambiar código
+- ✅ **Puerto:** Usa puerto por defecto (3002) o variable PORT
+- ✅ **Modo:** Desarrollo con logs detallados
+- 🎯 **Ideal para:** Desarrollo diario
+
+### **`npm run dev:complete`**
+- ✅ **Inicia:** Backend + Frontend con detección automática de puerto
+- ✅ **Auto-port:** Encuentra automáticamente un puerto disponible
+- ✅ **Modo:** Desarrollo optimizado
+- 🎯 **Ideal para:** Cuando tienes múltiples proyectos corriendo
+
+### **`npm run start:full`**
+- ✅ **Inicia:** Backend + Frontend en modo producción
+- ✅ **Optimizado:** Sin logs de desarrollo, máximo rendimiento
+- ✅ **Puerto:** Usa puerto por defecto o variable PORT
+- 🎯 **Ideal para:** Testing de producción local
 
 ---
 
