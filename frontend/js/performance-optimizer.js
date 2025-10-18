@@ -116,9 +116,9 @@ class PerformanceOptimizer {
     // Precargar módulos comunes después de un delay
     setTimeout(() => {
       const commonModules = [
-        './json-utils.js',
-        './ui.js',
-        './supabase.js'
+        '../json-utils.js',
+        '../ui.js',
+        '../supabase.js'
       ];
       
       this.moduleLoader.preloadModules(commonModules);
@@ -321,7 +321,7 @@ class PerformanceOptimizer {
     setTimeout(() => {
       const monitoringSection = document.querySelector('#monitoring-section');
       if (monitoringSection) {
-        this.moduleLoader?.loadOnScroll('./monitoring-dashboard.js', '#monitoring-section');
+        this.moduleLoader?.loadOnScroll('../monitoring-dashboard.js', '#monitoring-section');
       }
     }, 1000);
     
@@ -335,7 +335,7 @@ class PerformanceOptimizer {
   _optimizeReportesPage() {
     // Precargar módulos de gráficos
     setTimeout(() => {
-      this.moduleLoader?.preloadModules(['./grafica-progreso-barrios.js']);
+      this.moduleLoader?.preloadModules(['../grafica-progreso-barrios.js']);
     }, 2000);
     
     console.log('📊 Optimizaciones para página reportes aplicadas');
@@ -348,7 +348,7 @@ class PerformanceOptimizer {
   _optimizeMapaPage() {
     // Lazy load de funcionalidades del mapa
     setTimeout(() => {
-      this.moduleLoader?.preloadModules(['./mapa_reporte.js']);
+      this.moduleLoader?.preloadModules(['../mapa_reporte.js']);
     }, 1000);
     
     console.log('🗺️ Optimizaciones para página mapa aplicadas');

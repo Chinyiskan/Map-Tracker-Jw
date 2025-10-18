@@ -291,8 +291,8 @@ if (document.readyState === 'loading') {
     // Precargar módulos comunes después de que la página esté lista
     setTimeout(() => {
       const commonModules = [
-        './json-utils.js',
-        './ui.js'
+        '../json-utils.js',
+        '../ui.js'
       ];
       moduleLoader.preloadModules(commonModules);
     }, 1000);

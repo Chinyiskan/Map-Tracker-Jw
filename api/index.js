@@ -540,36 +540,119 @@ app.get('/api/progreso', async (req, res) => {
   }
 });
 
+// Endpoint para obtener progreso de todos los barrios
+app.get('/api/ciclos/progreso', async (req, res) => {
+  try {
+    console.log('📊 API: GET /api/ciclos/progreso');
+    
+    // Obtener progreso optimizado de todos los barrios
+    const { data: progreso, error } = await supabase
+      .rpc('obtener_progreso_barrios_optimizado');
+
+    if (error) {
+      console.error('❌ Error obteniendo progreso optimizado:', error);
+      
+      // Fallback: obtener datos básicos manualmente
+      const { data: ciclos, error: ciclosError } = await supabase
+        .from('ciclos')
+        .select(`
+          id,
+          barrio,
+          numero_ciclo,
+          estado,
+          fecha_inicio,
+          progreso_territorios (
+            territorio
+          )
+        `)
+        .eq('estado', 'activo');
+
+      if (ciclosError) {
+        console.error('❌ Error en fallback:', ciclosError);
+        return res.status(500).json({
+          success: false,
+          error: 'Error al obtener progreso',
+          message: ciclosError.message
+        });
+      }
+
+      // Procesar datos manualmente
+      const progresoManual = await Promise.all(
+        (ciclos || []).map(async (ciclo) => {
+          // Obtener total de territorios del barrio
+          const { data: manzanas, error: manzanasError } = await supabase
+            .from('manzanas_barrio_referencia')
+            .select('territorio')
+            .eq('barrio', ciclo.barrio);
+
+          const totalTerritorios = manzanasError ? 0 : (manzanas?.length || 0);
+          const territoriosCompletados = ciclo.progreso_territorios?.length || 0;
+          const progresoPorcentaje = totalTerritorios > 0 ? 
+            Math.round((territoriosCompletados / totalTerritorios) * 100) : 0;
+
+          return {
+            barrio: ciclo.barrio,
+            numero_ciclo: ciclo.numero_ciclo,
+            estado: ciclo.estado,
+            progreso_porcentaje: progresoPorcentaje,
+            territorios_completados: territoriosCompletados,
+            total_territorios: totalTerritorios,
+            fecha_inicio: ciclo.fecha_inicio,
+            dias_transcurridos: ciclo.fecha_inicio ? 
+              Math.floor((new Date() - new Date(ciclo.fecha_inicio)) / (1000 * 60 * 60 * 24)) : 0
+          };
+        })
+      );
+
+      return res.json({
+        success: true,
+        data: progresoManual,
+        total: progresoManual.length,
+        metodo: 'fallback'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: progreso || [],
+      total: progreso?.length || 0,
+      metodo: 'optimizado'
+    });
+
+  } catch (err) {
+    console.error('❌ Error en GET /api/ciclos/progreso:', err.message);
+    res.status(500).json({
+      success: false,
+      error: 'Error al obtener progreso de barrios',
+      message: err.message
+    });
+  }
+});
+
 // GET /api/barrios - Obtener lista de barrios únicos
 app.get('/api/barrios', async (req, res) => {
   try {
-    // Obtener barrios únicos de reportes y salidas
-    const [reportesBarrios, salidasBarrios] = await Promise.all([
-      supabase.from('reportes').select('barrio').not('barrio', 'is', null),
-      supabase.from('salidas_predicacion').select('barrio_asignado').not('barrio_asignado', 'is', null)
-    ]);
-    
-    const barriosSet = new Set();
-    
-    // Agregar barrios de reportes
-    if (reportesBarrios.data) {
-      reportesBarrios.data.forEach(item => {
-        if (item.barrio) barriosSet.add(item.barrio);
+    // Obtener lista de barrios únicos desde la tabla de manzanas
+    const { data: barrios, error } = await supabase
+      .from('manzanas_barrio_referencia')
+      .select('barrio')
+      .order('barrio');
+
+    if (error) {
+      console.error('❌ Error obteniendo barrios:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Error al obtener barrios',
+        message: error.message
       });
     }
-    
-    // Agregar barrios de salidas
-    if (salidasBarrios.data) {
-      salidasBarrios.data.forEach(item => {
-        if (item.barrio_asignado) barriosSet.add(item.barrio_asignado);
-      });
-    }
-    
-    const barrios = Array.from(barriosSet).sort();
-    
+
+    // Extraer nombres únicos de barrios
+    const barriosUnicos = [...new Set(barrios.map(b => b.barrio))];
+
     res.json({
       success: true,
-      data: barrios
+      data: barriosUnicos
     });
   } catch (err) {
     console.error('❌ Error en GET /api/barrios:', err.message);
