@@ -1,0 +1,422 @@
+-- =====================================================
+-- PATCH SENIOR: Robustificación de manzanas y estado
+-- =====================================================
+
+-- 0. (Opcional) Habilitar extensión para gen_random_uuid()
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- 1. Tabla de referencia de manzanas (si no existe)
+CREATE TABLE IF NOT EXISTS manzanas_barrio_referencia (
+    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+    barrio character varying NOT NULL,
+    manzana character varying NOT NULL,
+    es_valida boolean DEFAULT true,
+    auto_descubierta boolean DEFAULT false,
+    created_at timestamp with time zone DEFAULT now(),
+    UNIQUE(barrio, manzana)
+);
+
+-- 2. Función optimizada: insertar manzanas desde un texto CSV (robusta y segura)
+CREATE OR REPLACE FUNCTION auto_descubrir_manzanas_desde_texto(p_barrio text, p_manzanas text)
+RETURNS integer AS $$
+DECLARE
+  v_count integer := 0;
+BEGIN
+  IF p_barrio IS NULL OR trim(p_barrio) = '' THEN
+    RETURN 0;
+  END IF;
+
+  IF p_manzanas IS NULL OR trim(p_manzanas) = '' THEN
+    RETURN 0;
+  END IF;
+
+  -- Normalizar separadores y partir en filas, evitando entradas vacías
+  INSERT INTO manzanas_barrio_referencia (barrio, manzana, auto_descubierta)
+  SELECT
+    p_barrio,
+    lower(trim(m)) as manzana_norm,
+    true
+  FROM (
+    SELECT regexp_split_to_table(regexp_replace(p_manzanas, '\s*,\s*', ',', 'g'), ',') AS m
+  ) s
+  WHERE trim(m) <> ''
+  ON CONFLICT (barrio, manzana) DO NOTHING;
+
+  GET DIAGNOSTICS v_count = ROW_COUNT;
+  RETURN v_count;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 3. (Opcional) Función masiva para descubrir manzanas desde todos los reportes
+--    Útil para inicialización; no usar en triggers por motivos de performance.
+CREATE OR REPLACE FUNCTION auto_descubrir_manzanas_barrio_masivo()
+RETURNS void AS $$
+DECLARE
+  r RECORD;
+  manzanas_text text;
+BEGIN
+  FOR r IN SELECT DISTINCT barrio FROM reportes WHERE barrio IS NOT NULL
+  LOOP
+    SELECT string_agg(manzanas, ',') FROM reportes WHERE barrio = r.barrio INTO manzanas_text;
+    IF manzanas_text IS NOT NULL THEN
+      PERFORM auto_descubrir_manzanas_desde_texto(r.barrio, manzanas_text);
+    END IF;
+  END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 4. Función calculadora de estado: robusta, null-safe y protegida contra división por cero
+CREATE OR REPLACE FUNCTION calcular_estado_reporte(
+    p_barrio character varying,
+    p_fecha date,
+    p_manzanas text
+) RETURNS character varying AS $$
+DECLARE
+    v_ciclo_id uuid;
+    v_total_territorios integer := 0;
+    v_manzanas_reportadas_ciclo text[] := ARRAY[]::text[];
+    v_manzanas_unicas_count integer := 0;
+    v_es_primer_reporte boolean := false;
+    v_manzanas_este_reporte text[] := ARRAY[]::text[];
+    v_tiene_tabla_referencia boolean := false;
+    v_total_manzanas_referencia integer := 0;
+    v_cobertura_porcentaje numeric := 0;
+    v_tmp integer;
+BEGIN
+    -- Normalizaciones defensivas
+    p_barrio := trim(coalesce(p_barrio, ''));
+    p_manzanas := coalesce(p_manzanas, '');
+
+    -- Obtener ciclo activo del barrio (más reciente) de forma segura
+    SELECT id, COALESCE(total_territorios, 0)
+    INTO v_ciclo_id, v_total_territorios
+    FROM ciclos
+    WHERE barrio = p_barrio
+      AND estado = 'activo'
+      AND (fecha_fin IS NULL OR fecha_fin >= p_fecha)
+    ORDER BY fecha_inicio DESC
+    LIMIT 1;
+
+    IF v_ciclo_id IS NULL THEN
+        RETURN 'iniciado';
+    END IF;
+
+    -- Verificar si existe tabla de referencia para este barrio
+    SELECT (COUNT(*) > 0), COALESCE(COUNT(*),0)
+      INTO v_tiene_tabla_referencia, v_total_manzanas_referencia
+    FROM manzanas_barrio_referencia
+    WHERE barrio = p_barrio AND es_valida = true;
+
+    -- Obtener todas las manzanas reportadas en el ciclo (incluyendo p_manzanas pasado)
+    WITH todas_manzanas AS (
+        -- manzanas reportadas por progresos del ciclo (si existen)
+        SELECT trim(lower(manzana)) as manzana
+        FROM (
+          SELECT regexp_split_to_table(regexp_replace(r.manzanas, '\s*,\s*', ',', 'g'), ',') as manzana
+          FROM progreso_territorios pt
+          JOIN reportes r ON pt.reporte_id = r.id
+          WHERE pt.ciclo_id = v_ciclo_id
+            AND r.fecha <= p_fecha
+        ) t
+        WHERE trim(manzana) <> ''
+
+        UNION
+
+        -- incluir las manzanas del reporte actual (p_manzanas) sin depender de que NEW ya esté persistido
+        SELECT trim(lower(m)) as manzana
+        FROM (
+          SELECT regexp_split_to_table(regexp_replace(p_manzanas, '\s*,\s*', ',', 'g'), ',') as m
+        ) s
+        WHERE trim(m) <> ''
+    )
+    SELECT COALESCE(array_agg(DISTINCT manzana), ARRAY[]::text[])
+    INTO v_manzanas_reportadas_ciclo
+    FROM todas_manzanas;
+
+    v_manzanas_unicas_count := COALESCE(array_length(v_manzanas_reportadas_ciclo, 1), 0);
+
+    -- Verificar si es el primer reporte del ciclo (antes de p_fecha)
+    SELECT (COUNT(*) = 0)
+    INTO v_es_primer_reporte
+    FROM progreso_territorios pt
+    JOIN reportes r ON pt.reporte_id = r.id
+    WHERE pt.ciclo_id = v_ciclo_id
+      AND r.fecha < p_fecha;
+
+    -- Normalizar arreglo del reporte actual
+    SELECT COALESCE(array_agg(trim(lower(m))), ARRAY[]::text[])
+    INTO v_manzanas_este_reporte
+    FROM (
+      SELECT regexp_split_to_table(regexp_replace(p_manzanas, '\s*,\s*', ',', 'g'), ',') as m
+    ) s
+    WHERE trim(m) <> '';
+
+    -- 1) Primer reporte -> 'iniciado'
+    IF v_es_primer_reporte THEN
+        RETURN 'iniciado';
+    END IF;
+
+    -- 2) Determinar finalizado en base a tabla de referencia (si existe)
+    IF v_tiene_tabla_referencia AND v_total_manzanas_referencia > 0 THEN
+        v_cobertura_porcentaje := (v_manzanas_unicas_count * 100.0) / v_total_manzanas_referencia;
+
+        IF v_manzanas_unicas_count >= v_total_manzanas_referencia THEN
+            RETURN 'finalizado';
+        END IF;
+
+        IF v_cobertura_porcentaje >= 95 THEN
+            RETURN 'finalizado';
+        END IF;
+    ELSE
+        -- fallback por total_territorios si no hay tabla referencia
+        v_total_territorios := COALESCE(v_total_territorios, 0);
+
+        IF v_total_territorios > 0 THEN
+            IF v_manzanas_unicas_count >= v_total_territorios THEN
+                RETURN 'finalizado';
+            END IF;
+            IF v_manzanas_unicas_count >= FLOOR(v_total_territorios * 0.9) THEN
+                RETURN 'finalizado';
+            END IF;
+        END IF;
+    END IF;
+
+    -- 3) Heurística: reporte con muchas manzanas señalando posible fin
+    IF COALESCE(array_length(v_manzanas_este_reporte,1),0) >= 10 THEN
+        IF v_tiene_tabla_referencia AND v_total_manzanas_referencia > 0 THEN
+            v_cobertura_porcentaje := (v_manzanas_unicas_count * 100.0) / v_total_manzanas_referencia;
+            IF v_cobertura_porcentaje >= 85 THEN
+                RETURN 'finalizado';
+            END IF;
+        ELSE
+            IF v_total_territorios > 0 AND v_manzanas_unicas_count >= FLOOR(v_total_territorios * 0.85) THEN
+                RETURN 'finalizado';
+            END IF;
+        END IF;
+    END IF;
+
+    -- 4) Intermedio -> en_progreso si hay más de 1 manzana total reportada
+    IF v_manzanas_unicas_count > 1 THEN
+        RETURN 'en_progreso';
+    END IF;
+
+    -- fallback final
+    RETURN 'en_progreso';
+END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+-- 5. Trigger wrapper para calcular estado antes de INSERT/UPDATE
+CREATE OR REPLACE FUNCTION trigger_calcular_estado_reporte()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Llamar a la función calculadora en modo defensivo;
+  -- pasar la lista de manzanas (vacia si NULL)
+  NEW.estado := calcular_estado_reporte(NEW.barrio, COALESCE(NEW.fecha::date, now()::date), COALESCE(NEW.manzanas, ''));
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 6. Trigger wrapper para auto-descubrir manzanas desde NEW.manzanas (AFTER INSERT)
+CREATE OR REPLACE FUNCTION trigger_auto_descubrir_manzanas_insert()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Solo ejecutar si hay manzanas en el NEW record
+  IF TG_OP = 'INSERT' AND NEW.manzanas IS NOT NULL AND trim(NEW.manzanas) <> '' THEN
+    PERFORM auto_descubrir_manzanas_desde_texto(NEW.barrio, NEW.manzanas);
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 7. Crear / recrear triggers (asegurar idempotencia)
+DROP TRIGGER IF EXISTS trigger_estado_reporte ON reportes;
+CREATE TRIGGER trigger_estado_reporte
+  BEFORE INSERT OR UPDATE ON reportes
+  FOR EACH ROW
+  EXECUTE FUNCTION trigger_calcular_estado_reporte();
+
+DROP TRIGGER IF EXISTS trigger_auto_descubrir_manzanas ON reportes;
+CREATE TRIGGER trigger_auto_descubrir_manzanas
+  AFTER INSERT ON reportes
+  FOR EACH ROW
+  EXECUTE FUNCTION trigger_auto_descubrir_manzanas_insert();
+
+-- 8. Índices recomendados para performance
+CREATE INDEX IF NOT EXISTS idx_reportes_barrio_fecha ON reportes (barrio, fecha);
+CREATE INDEX IF NOT EXISTS idx_progreso_ciclo ON progreso_territorios (ciclo_id);
+CREATE INDEX IF NOT EXISTS idx_manzanas_barrio ON manzanas_barrio_referencia (barrio);
+CREATE INDEX IF NOT EXISTS idx_manzanas_barrio_manzana ON manzanas_barrio_referencia (barrio, manzana);
+
+-- 9. (Opcional) Actualizar reportes existentes de forma controlada
+-- Hacerlo en batches para no bloquear la BD si hay muchos registros.
+-- Ejemplo para batches de 500 (ejecutar fuera de transacción pesada):
+-- UPDATE reportes SET estado = calcular_estado_reporte(barrio, fecha::date, COALESCE(manzanas, ''))
+-- WHERE id IN (
+--   SELECT id FROM reportes WHERE estado IS NULL OR estado != 'finalizado' LIMIT 500
+-- );
+
+-- 10. Vista de resumen (igual que antes, útil)
+CREATE OR REPLACE VIEW resumen_manzanas_por_barrio AS
+SELECT 
+    barrio,
+    COUNT(*) as total_manzanas_descubiertas,
+    COUNT(*) FILTER (WHERE auto_descubierta = true) as manzanas_auto_descubiertas,
+    COUNT(*) FILTER (WHERE auto_descubierta = false) as manzanas_manuales,
+    MIN(created_at) as primera_manzana,
+    MAX(created_at) as ultima_manzana
+FROM manzanas_barrio_referencia
+WHERE es_valida = true
+GROUP BY barrio
+ORDER BY total_manzanas_descubiertas DESC;
+
+-- =====================================================
+-- TESTS / QUERIES ÚTILES (ejecutar manualmente)
+-- =====================================================
+
+-- 1) Probar función de auto-descubrimiento desde texto
+-- SELECT auto_descubrir_manzanas_desde_texto('Zulima', 'A1, A2, A3, A4');
+
+-- 2) Probar cálculo de estado (varios escenarios)
+-- SELECT calcular_estado_reporte('Zulima', '2025-08-01'::date, 'A1,A2');
+-- SELECT calcular_estado_reporte('Zulima', now()::date, NULL);
+
+-- 3) Ver resumen
+-- SELECT * FROM resumen_manzanas_por_barrio LIMIT 50;
+
+-- 4) Ver manzanas de un barrio
+-- SELECT manzana, auto_descubierta FROM manzanas_barrio_referencia WHERE barrio = 'Zulima' ORDER BY manzana;
+
+-- =====================================================
+-- NOTAS IMPORTANTES (leer antes de ejecutar en prod)
+-- =====================================================
+-- 1) La función auto_descubrir_manzanas_desde_texto está pensada para ejecutarse
+--    desde triggers por NEW.manzanas. Evita rescans masivos de la tabla reportes
+--    en cada insert (ese trabajo lo relegamos a la función masiva solo para
+--    inicializaciones o mantenimiento).
+--
+-- 2) Si ya hay muchos reportes, evita ejecutar un UPDATE masivo en una sola
+--    transacción. Haz batches (ver sección 9, ejemplo).
+--
+-- 3) Revisar que las columnas 'fecha', 'manzanas', 'total_territorios' existan
+--    y tengan tipos esperados. La función usa COALESCE para tolerar NULLs.
+--
+-- 4) Si usas replicación o réplicas, probar triggers primero en staging.
+--
+-- 5) Si necesitas soportar formatos de manzana más complejos (ej: "A-1; B2"),
+--    puedes adaptar la regexp en regexp_split_to_table para incluir otros separadores.
+--
+-- 6) Monitoreo: después de desplegar, ejecuta EXPLAIN ANALYZE en consultas
+--    que usen estas funciones si ves latencias, y añade índices según el plan de ejecución.
+-- =====================================================
+
+-- =====================================================
+-- OPTIMIZACIÓN SPRINT 2: ÍNDICES ADICIONALES
+-- =====================================================
+
+-- Índices para optimizar consultas frecuentes identificadas en la auditoría
+-- Estos índices mejoran significativamente el rendimiento de las operaciones más comunes
+
+-- 1. Índice compuesto para reportes por barrio y fecha (consultas de progreso)
+CREATE INDEX IF NOT EXISTS idx_reportes_barrio_fecha 
+ON reportes (barrio, fecha DESC);
+
+-- 2. Índice para reportes por fecha descendente (consultas temporales)
+CREATE INDEX IF NOT EXISTS idx_reportes_fecha_desc 
+ON reportes (fecha DESC);
+
+-- 3. Índice compuesto para ciclos por barrio y estado (búsqueda de ciclos activos)
+CREATE INDEX IF NOT EXISTS idx_ciclos_barrio_estado 
+ON ciclos (barrio, estado);
+
+-- 4. Índice para progreso_territorios por fecha_trabajado (consultas temporales)
+CREATE INDEX IF NOT EXISTS idx_progreso_fecha_trabajado 
+ON progreso_territorios (fecha_trabajado DESC);
+
+-- 5. Índice compuesto para progreso_territorios por ciclo_id y territorio
+CREATE INDEX IF NOT EXISTS idx_progreso_ciclo_territorio 
+ON progreso_territorios (ciclo_id, territorio);
+
+-- 6. Índice para reportes por nombre_capitan (consultas de capitanes)
+CREATE INDEX IF NOT EXISTS idx_reportes_capitan 
+ON reportes (nombre_capitan);
+
+-- 7. Índice para ciclos por fecha_inicio (consultas de historial)
+CREATE INDEX IF NOT EXISTS idx_ciclos_fecha_inicio 
+ON ciclos (fecha_inicio DESC);
+
+-- 8. Índice para manzanas_barrio_referencia por barrio (búsquedas de referencia)
+CREATE INDEX IF NOT EXISTS idx_manzanas_barrio 
+ON manzanas_barrio_referencia (barrio);
+
+-- 9. Índice compuesto para manzanas_barrio_referencia por barrio y manzana
+CREATE INDEX IF NOT EXISTS idx_manzanas_barrio_manzana 
+ON manzanas_barrio_referencia (barrio, manzana);
+
+-- 10. Índice para salidas_predicacion por fecha (si existe la tabla)
+CREATE INDEX IF NOT EXISTS idx_salidas_fecha 
+ON salidas_predicacion (fecha DESC);
+
+-- 11. Índice para capitanes por activo (filtros de capitanes activos)
+CREATE INDEX IF NOT EXISTS idx_capitanes_activo 
+ON capitanes (activo) WHERE activo = true;
+
+-- 12. Índice parcial para reportes con estado específico
+CREATE INDEX IF NOT EXISTS idx_reportes_estado_activo 
+ON reportes (estado, fecha DESC) WHERE estado IN ('activo', 'en_progreso');
+
+-- =====================================================
+-- ANÁLISIS DE PERFORMANCE DE ÍNDICES
+-- =====================================================
+
+-- Consulta para verificar el uso de índices
+-- SELECT schemaname, tablename, indexname, idx_scan, idx_tup_read, idx_tup_fetch 
+-- FROM pg_stat_user_indexes 
+-- WHERE schemaname = 'public' 
+-- ORDER BY idx_scan DESC;
+
+-- Consulta para verificar el tamaño de índices
+-- SELECT schemaname, tablename, indexname, pg_size_pretty(pg_relation_size(indexrelid)) as size
+-- FROM pg_stat_user_indexes 
+-- WHERE schemaname = 'public'
+-- ORDER BY pg_relation_size(indexrelid) DESC;
+
+-- =====================================================
+-- BENEFICIOS ESPERADOS DE LOS ÍNDICES
+-- =====================================================
+
+-- 1. idx_reportes_barrio_fecha: 
+--    - Optimiza consultas de progreso por barrio
+--    - Mejora filtros temporales en reportes
+--    - Beneficio estimado: 70-80% más rápido
+
+-- 2. idx_ciclos_barrio_estado:
+--    - Acelera búsqueda de ciclos activos
+--    - Optimiza consultas de estado por barrio
+--    - Beneficio estimado: 60-70% más rápido
+
+-- 3. idx_progreso_fecha_trabajado:
+--    - Mejora consultas temporales de progreso
+--    - Optimiza reportes de actividad reciente
+--    - Beneficio estimado: 50-60% más rápido
+
+-- 4. Índices compuestos:
+--    - Eliminan necesidad de ordenamiento adicional
+--    - Permiten index-only scans en muchos casos
+--    - Beneficio estimado: 40-50% más rápido
+
+-- =====================================================
+-- MONITOREO Y MANTENIMIENTO
+-- =====================================================
+
+-- Ejecutar ANALYZE después de crear índices para actualizar estadísticas
+-- ANALYZE reportes;
+-- ANALYZE ciclos;
+-- ANALYZE progreso_territorios;
+-- ANALYZE manzanas_barrio_referencia;
+-- ANALYZE salidas_predicacion;
+-- ANALYZE capitanes;
+
+-- Monitorear el uso de índices periódicamente
+-- y eliminar índices no utilizados para optimizar espacio
+
+-- =====================================================

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Consultar Territorios</title>
+  <link rel="stylesheet" href="css/design-system.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="container">
+    <main class="flex flex-col items-center justify-center" style="min-height: 100vh; padding: var(--space-lg) 0;">
+      
+      <!-- Header -->
+      <header class="text-center mb-xl">
+        <div class="flex justify-center mb-lg">
+          <div class="bg-primary p-lg rounded-xl shadow-lg">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" stroke="white" stroke-width="2"/>
+              <circle cx="12" cy="10" r="3" stroke="white" stroke-width="2"/>
+            </svg>
+          </div>
+        </div>
+        <h1 class="text-3xl font-bold text-primary mb-sm">Consultar Territorios</h1>
+        <p class="text-lg text-secondary">Selecciona un barrio para revisar el estado actual de sus territorios</p>
+      </header>
+      
+      <!-- Formulario de Selección -->
+      <div class="card" style="max-width: 500px; width: 100%;">
+        <div class="card__header">
+          <h2 class="text-xl font-semibold text-primary">Seleccionar Barrio</h2>
+        </div>
+        <div class="card__body">
+          <div class="form-group mb-lg">
+            <label for="barrio-select" class="form-label">Barrio</label>
+            <select id="barrio-select" name="barrioSelect" class="form-input form-select" required>
+              <option value="" disabled selected>Selecciona un barrio</option>
+              <option value="Acacios">Acacios</option>
+              <option value="Alcala">Alcalá</option>
+              <option value="Ciudad Jardin">Ciudad Jardín</option>
+              <option value="Guaimaral">Guaimaral</option>
+              <option value="La Mar y Gratamira">La Mar y Gratamira</option>
+              <option value="Niza">Niza</option>
+              <option value="Prados Norte">Prados Norte</option>
+              <option value="Proceres">Próceres</option>
+              <option value="San Eduardo">San Eduardo</option>
+              <option value="Santa Elena">Santa Elena</option>
+              <option value="Tasajero">Tasajero</option>
+              <option value="Zulima">Zulima</option>
+            </select>
+          </div>
+          
+          <!-- Botones -->
+          <div class="flex gap-md">
+            <button type="button" id="btn-volver" class="btn btn--secondary flex-1">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+              </svg>
+              Volver
+            </button>
+            <button type="button" id="btn-ver-mapa" class="btn btn--primary flex-1">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                <circle cx="12" cy="10" r="3"/>
+              </svg>
+              Ver Mapa
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Footer -->
+      <footer class="text-center mt-xl">
+        <p class="text-sm text-muted">Modo Consulta • Solo Lectura</p>
+      </footer>
+      
+    </main>
+  </div>
+  
+  <!-- Scripts -->
+  <script type="module" src="js/ui.js"></script>
+  
+  <!-- JavaScript para funcionalidad -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const btnVolver = document.getElementById('btn-volver');
+      const btnVerMapa = document.getElementById('btn-ver-mapa');
+      const barrioSelect = document.getElementById('barrio-select');
+      
+      // Botón Volver
+      if (btnVolver) {
+        btnVolver.addEventListener('click', () => {
+          window.location.href = 'index.html';
+        });
+      }
+      
+      // Botón Ver Mapa
+      if (btnVerMapa) {
+        btnVerMapa.addEventListener('click', () => {
+          const barrio = barrioSelect.value;
+          
+          if (!barrio) {
+            alert('Por favor selecciona un barrio');
+            return;
+          }
+          
+          // Redirigir a mapa.html en modo consulta
+          window.location.href = `mapa.html?modo=consulta&barrio=${encodeURIComponent(barrio)}`;
+        });
+      }
+    });
+  </script>
+</body>
+<script defer src="https://speed.vercel.app/insights.js"></script>
+</html>

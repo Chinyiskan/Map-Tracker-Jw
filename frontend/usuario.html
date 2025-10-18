@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Datos del Reporte</title>
+  <link rel="stylesheet" href="css/design-system.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="container flex items-center justify-center" style="min-height: 100vh; padding: var(--space-lg);">
+    <div class="card" style="width: 100%; max-width: 500px;">
+
+      <div class="card__header text-center">
+        <div class="flex justify-center mb-md">
+          <div class="bg-accent p-md rounded-lg">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="white" stroke-width="2"/>
+              <polyline points="14,2 14,8 20,8" stroke="white" stroke-width="2"/>
+              <line x1="16" y1="13" x2="8" y2="13" stroke="white" stroke-width="2"/>
+              <line x1="16" y1="17" x2="8" y2="17" stroke="white" stroke-width="2"/>
+              <polyline points="10,9 9,9 8,9" stroke="white" stroke-width="2"/>
+            </svg>
+          </div>
+        </div>
+        <h2 class="text-xl font-semibold text-primary mb-xs">Datos del Reporte</h2>
+        <p class="text-sm text-secondary">Completa la información para crear un nuevo reporte territorial</p>
+      </div>
+      
+      <div class="card__body">
+        <form id="datos-form">
+          <div class="form-group">
+            <label for="capitan-select" class="form-label">Capitán</label>
+            <select id="capitan-select" name="capitanSelect" class="form-input form-select" required>
+              <option value="" disabled selected>Selecciona un capitán</option>
+              <!-- Opciones pobladas dinámicamente -->
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="fecha-reporte" class="form-label">Fecha del Reporte</label>
+            <input type="date" id="fecha-reporte" name="fechaReporte" class="form-input" required>
+          </div>
+          
+          <!-- Estado del territorio se maneja automáticamente en el backend -->
+          
+          <div class="form-group">
+            <label for="barrio-select" class="form-label">Seleccionar Barrio</label>
+            <select id="barrio-select" name="barrioSelect" class="form-input form-select" required>
+              <option value="" disabled selected>Selecciona un barrio</option>
+            </select>
+          </div>
+          
+
+          
+          <div class="flex gap-md mt-lg">
+            <button type="button" id="btn-volver-home" class="btn btn--secondary flex-1">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z" stroke="currentColor" stroke-width="2"/>
+                <polyline points="9,22 9,12 15,12 15,22" stroke="currentColor" stroke-width="2"/>
+              </svg>
+              Volver
+            </button>
+            <button type="submit" class="btn btn--primary flex-1">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M12 5L19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Siguiente
+            </button>
+          </div>
+        </form>
+      </div>
+  </div>
+  
+  <!-- Scripts -->
+  <script type="module" src="js/ui.js"></script>
+  <script type="module" src="js/mapa_reporte.js"></script>
+  <script src="js/main.js"></script>
+  
+  <!-- Inicialización del MapaReporteManager -->
+  <script type="module">
+    import { MapaReporteManager } from './js/mapa_reporte.js';
+    
+    // Inicializar cuando el DOM esté listo
+    document.addEventListener('DOMContentLoaded', () => {
+      MapaReporteManager.init();
+    });
+  </script>
+</body>
+  <script defer src="https://speed.vercel.app/insights.js"></script>
+</html>

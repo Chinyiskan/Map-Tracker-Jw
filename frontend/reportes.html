@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Datos del Reporte</title>
+  <link rel="stylesheet" href="css/design-system.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="container flex items-center justify-center" style="min-height: 100vh; padding: var(--space-lg);">
+    <div class="card" style="width: 100%; max-width: 500px;">
+
+      <div class="card__header text-center">
+        <div class="flex justify-center mb-md">
+          <div class="bg-accent p-md rounded-lg">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="white" stroke-width="2"/>
+              <polyline points="14,2 14,8 20,8" stroke="white" stroke-width="2"/>
+              <line x1="16" y1="13" x2="8" y2="13" stroke="white" stroke-width="2"/>
+              <line x1="16" y1="17" x2="8" y2="17" stroke="white" stroke-width="2"/>
+              <polyline points="10,9 9,9 8,9" stroke="white" stroke-width="2"/>
+            </svg>
+          </div>
+        </div>
+        <h2 class="text-xl font-semibold text-primary mb-xs">Datos del Reporte</h2>
+        <p class="text-sm text-secondary">Completa la información para crear un nuevo reporte territorial</p>
+      </div>
+      
+      <div class="card__body">
+        <form id="datos-form">
+          <div class="form-group">
+            <label for="capitan-select" class="form-label">Capitán</label>
+            <select id="capitan-select" name="capitanSelect" class="form-input form-select" required>
+              <option value="" disabled selected>Selecciona un capitán</option>
+              <!-- Opciones pobladas dinámicamente -->
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="fecha-reporte" class="form-label">Fecha del Reporte</label>
+            <input type="date" id="fecha-reporte" name="fechaReporte" class="form-input" required>
+          </div>
+          
+          <!-- Estado del Reporte (selección manual) -->
+          <div class="form-group">
+            <label for="estado-reporte" class="form-label">Estado del Reporte</label>
+            <select id="estado-reporte" name="estadoReporte" class="form-input form-select" required>
+              <option value="" disabled selected>Selecciona un estado</option>
+              <option value="iniciado">Iniciado</option>
+              <option value="en_progreso">En progreso</option>
+              <option value="finalizado">Finalizado</option>
+            </select>
+            <!-- Ayuda contextual con icono -->
+            <div class="mt-xs" style="position: relative;">
+              <button id="estado-info-btn" type="button" class="icon-button" aria-label="Información sobre los estados" title="Información sobre estados">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <circle cx="12" cy="16" r="1"></circle>
+                </svg>
+              </button>
+            </div>
+            <!-- Contenedor del tooltip (se posiciona dinámicamente) -->
+            <div id="estado-tooltip" class="tooltip-bubble" role="tooltip" aria-hidden="true">
+              <div class="tooltip-bubble__content">
+                <div class="tooltip-bubble__row">
+                  <span class="tooltip-badge tooltip-badge--start">Iniciado</span>
+                  <span class="tooltip-text">Comienza desde cero el trabajo del territorio.</span>
+                </div>
+                <div class="tooltip-bubble__row">
+                  <span class="tooltip-badge tooltip-badge--progress">En progreso</span>
+                  <span class="tooltip-text">Ya inició y se continúa el trabajo.</span>
+                </div>
+                <div class="tooltip-bubble__row">
+                  <span class="tooltip-badge tooltip-badge--done">Finalizado</span>
+                  <span class="tooltip-text">El territorio quedó completamente cubierto.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="barrio-select" class="form-label">Seleccionar Barrio</label>
+            <select id="barrio-select" name="barrioSelect" class="form-input form-select" required>
+              <option value="" disabled selected>Selecciona un barrio</option>
+            </select>
+          </div>
+          
+          <!-- Sección de Observaciones (Opcional) -->
+          <div class="form-group">
+            <label for="observaciones-select" class="form-label">
+              Tipo de Actividad <span class="text-muted">(Opcional)</span>
+            </label>
+            
+            <select id="observaciones-select" name="observacionesSelect" class="form-input form-select">
+              <option value="">-- Seleccionar tipo de actividad --</option>
+              <option value="Visita del circuito">Visita del circuito</option>
+              <option value="Campaña regional">Campaña regional</option>
+              <option value="Campaña conmemoración">Campaña conmemoración</option>
+              <option value="Campaña especial">Campaña especial</option>
+              <option value="otro">Otro (especificar)</option>
+            </select>
+            
+            <!-- Campo de texto para "Otro" -->
+            <div id="observaciones-otro-container" class="mt-xs" style="display: none;">
+              <label for="observaciones-otro" class="form-label text-sm">
+                Especificar actividad:
+              </label>
+              <textarea 
+                id="observaciones-otro" 
+                name="observacionesOtro" 
+                class="form-input" 
+                placeholder="Describe brevemente la actividad (máx. 50 palabras)"
+                maxlength="250"
+                rows="2"
+              ></textarea>
+              <div class="text-xs text-muted mt-xs">
+                <span id="char-counter">0</span>/250 caracteres
+              </div>
+            </div>
+          </div>
+
+          <div class="flex gap-md mt-lg">
+            <button type="button" id="btn-volver-home" class="btn btn--secondary flex-1">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z" stroke="currentColor" stroke-width="2"/>
+                <polyline points="9,22 9,12 15,12 15,22" stroke="currentColor" stroke-width="2"/>
+              </svg>
+              Volver
+            </button>
+            <button type="submit" class="btn btn--primary flex-1">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M12 5L19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Siguiente
+            </button>
+          </div>
+        </form>
+      </div>
+  </div>
+  
+  <!-- Scripts -->
+  <script type="module" src="js/ui.js"></script>
+  <script type="module" src="js/mapa_reporte.js"></script>
+  <script type="module" src="js/main.js"></script>
+  
+  <!-- Estilos mínimos para tooltip de estado -->
+  <style>
+    .icon-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 1px solid var(--border-color, #e5e7eb);
+      color: var(--text-secondary, #6b7280);
+      background: var(--surface, #fff);
+      cursor: pointer;
+      transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    }
+    .icon-button:hover { background: var(--surface-2, #f9fafb); color: var(--text-primary, #111827); border-color: var(--border-color-strong, #d1d5db); }
+    .icon-button:focus { outline: 2px solid var(--accent, #3b82f6); outline-offset: 2px; }
+
+    .tooltip-bubble {
+      position: absolute;
+      top: -9999px; left: -9999px;
+      opacity: 0; pointer-events: none;
+      z-index: 1000;
+      min-width: 260px;
+      max-width: min(90vw, 360px);
+      background: var(--surface, #fff);
+      border: 1px solid var(--border-color, #e5e7eb);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.08), 0 3px 6px rgba(0,0,0,0.06);
+      border-radius: 10px;
+      transform: translateY(-6px);
+      transition: opacity .15s ease, transform .15s ease;
+    }
+    .tooltip-bubble.is-visible { opacity: 1; pointer-events: auto; transform: translateY(0); }
+    .tooltip-bubble::after {
+      content: '';
+      position: absolute;
+      top: -7px; left: 18px;
+      width: 12px; height: 12px;
+      background: inherit;
+      border-left: 1px solid var(--border-color, #e5e7eb);
+      border-top: 1px solid var(--border-color, #e5e7eb);
+      transform: rotate(45deg);
+    }
+    .tooltip-bubble__content { padding: 10px 12px; }
+    .tooltip-bubble__row { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+    .tooltip-text { font-size: 12px; color: var(--text-secondary, #6b7280); }
+    .tooltip-badge {
+      font-size: 11px; font-weight: 600;
+      border-radius: 999px; padding: 2px 8px;
+      border: 1px solid transparent;
+    }
+    .tooltip-badge--start { color: #1f2937; background: #e5e7eb; border-color: #d1d5db; }
+    .tooltip-badge--progress { color: #1e40af; background: #dbeafe; border-color: #bfdbfe; }
+    .tooltip-badge--done { color: #065f46; background: #d1fae5; border-color: #a7f3d0; }
+  </style>
+  
+  <!-- Inicialización del MapaReporteManager -->
+  <script type="module">
+    import { MapaReporteManager } from './js/mapa_reporte.js';
+    
+    // Inicializar cuando el DOM esté listo
+    document.addEventListener('DOMContentLoaded', () => {
+      MapaReporteManager.init();
+    });
+  </script>
+</body>
+  <script defer src="https://speed.vercel.app/insights.js"></script>
+</html>
