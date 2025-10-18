@@ -1,14 +1,12 @@
 // backend/server.js
 // Punto de entrada del servidor - Refactorizado para arquitectura modular
 
-import app, { initializeApp } from './app.js';
-import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { validateEnvironment, showEnvironmentSummary } from './config/env-validator.js';
+const { default: app, initializeApp } = require('./app.js');
+const dotenv = require('dotenv');
+const path = require('path');
+const { validateEnvironment, showEnvironmentSummary } = require('./config/env-validator.js');
 
-// Configurar __dirname para ES modules
-const __filename = fileURLToPath(import.meta.url);
+// Configurar __dirname para CommonJS
 const __dirname = path.dirname(__filename);
 
 // Cargar variables de entorno
@@ -25,7 +23,7 @@ try {
 }
 
 // Importar configuración de puertos
-import { getOptimalPort, PORT_CONFIG } from './config/port-config.js';
+const { getOptimalPort, PORT_CONFIG } = require('./config/port-config.js');
 
 // Configuración del servidor
 const PREFERRED_PORT = parseInt(process.env.PORT, 10) || PORT_CONFIG.DEFAULT_PORT;

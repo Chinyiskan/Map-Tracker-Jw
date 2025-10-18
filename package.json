@@ -2,7 +2,6 @@
   "name": "map-tracker-jw",
   "version": "2.1.0",
   "description": "Sistema de Reportes Territoriales JW - Arquitectura Modular con UI/UX Optimizada",
-  "type": "module",
   "main": "backend/server.js",
   "scripts": {
     "start": "node backend/server.js",
