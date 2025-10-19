@@ -1111,7 +1111,7 @@ export interface ConsultaResultado {
   territorio: string | null;
   persona: string;
   estado: string;
-  data: ReporteAPI | SalidaAPI;
+  data: ReporteAPI | SalidaCapitan;
 }
 
 /**
@@ -1171,8 +1171,8 @@ export interface MapasConsultaManagerInterface {
   executeSearch(): Promise<void>;
   _validateFilters(filters: ConsultaFilters): FilterValidation;
   _searchReportes(filters: ConsultaFilters): Promise<ReporteAPI[]>;
-  _searchSalidas(filters: ConsultaFilters): Promise<SalidaAPI[]>;
-  _processSearchResults(reportes: ReporteAPI[], salidas: SalidaAPI[], filters: ConsultaFilters): ConsultaResultado[];
+  _searchSalidas(filters: ConsultaFilters): Promise<SalidaCapitan[]>;
+  _processSearchResults(reportes: ReporteAPI[], salidas: SalidaCapitan[], filters: ConsultaFilters): ConsultaResultado[];
   
   // Visualización de resultados
   _displayResults(resultados: ConsultaResultado[]): void;
