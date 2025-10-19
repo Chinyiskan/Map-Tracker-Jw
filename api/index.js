@@ -543,7 +543,8 @@ app.get('/api/progreso', async (req, res) => {
 // Endpoint para obtener progreso de todos los barrios
 app.get('/api/ciclos/progreso', async (req, res) => {
   try {
-    console.log('📊 API: GET /api/ciclos/progreso');
+    console.log('📊 [INICIO] Obteniendo progreso de barrios...');
+    console.log('🔍 [DEBUG] Intentando función optimizada obtener_progreso_barrios_optimizado...');
     
     // Obtener progreso optimizado de todos los barrios
     const { data: progreso, error } = await supabase
@@ -551,67 +552,122 @@ app.get('/api/ciclos/progreso', async (req, res) => {
 
     if (error) {
       console.error('❌ Error obteniendo progreso optimizado:', error);
+      console.log('🔄 Ejecutando fallback manual mejorado...');
       
-      // Fallback: obtener datos básicos manualmente
-      const { data: ciclos, error: ciclosError } = await supabase
-        .from('ciclos')
-        .select(`
-          id,
-          barrio,
-          numero_ciclo,
-          estado,
-          fecha_inicio,
-          progreso_territorios (
-            territorio
-          )
-        `)
-        .eq('estado', 'activo');
+      try {
+        // FALLBACK MEJORADO: Obtener TODOS los barrios primero
+        const { data: todosBarrios, error: barriosError } = await supabase
+          .from('manzanas_barrio_referencia')
+          .select('barrio')
+          .eq('es_valida', true);
 
-      if (ciclosError) {
-        console.error('❌ Error en fallback:', ciclosError);
+        if (barriosError) {
+          console.error('❌ Error obteniendo barrios:', barriosError);
+          return res.status(500).json({
+            success: false,
+            error: 'Error al obtener barrios',
+            message: barriosError.message
+          });
+        }
+
+        // Obtener barrios únicos
+        const barriosUnicos = [...new Set(todosBarrios.map(b => b.barrio))];
+        console.log(`📊 Procesando ${barriosUnicos.length} barrios únicos:`, barriosUnicos);
+
+        // Obtener ciclos activos
+        const { data: ciclosActivos, error: ciclosError } = await supabase
+          .from('ciclos')
+          .select(`
+            id,
+            barrio,
+            numero_ciclo,
+            estado,
+            fecha_inicio,
+            total_territorios,
+            territorios_completados,
+            progreso_porcentaje,
+            progreso_territorios (
+              territorio
+            )
+          `)
+          .eq('estado', 'activo');
+
+        if (ciclosError) {
+          console.error('❌ Error obteniendo ciclos activos:', ciclosError);
+        }
+
+        // Procesar datos para TODOS los barrios
+        const progresoManual = await Promise.all(
+          barriosUnicos.map(async (barrio) => {
+            // Buscar ciclo activo para este barrio
+            const cicloActivo = ciclosActivos?.find(c => c.barrio === barrio);
+
+            // Obtener total de territorios del barrio (CORREGIDO: usar 'manzana' no 'territorio')
+            const { data: manzanas, error: manzanasError } = await supabase
+              .from('manzanas_barrio_referencia')
+              .select('manzana')
+              .eq('barrio', barrio)
+              .eq('es_valida', true);
+
+            // CORREGIDO: Priorizar total_territorios del ciclo sobre manzanas_barrio_referencia
+             const totalTerritorios = cicloActivo?.total_territorios || 
+               (manzanasError ? 0 : (manzanas?.length || 0));
+
+            // Obtener datos de reportes para este barrio
+            const { data: reportes, error: reportesError } = await supabase
+              .from('reportes')
+              .select('estado')
+              .eq('barrio', barrio);
+
+            const totalReportes = reportesError ? 0 : (reportes?.length || 0);
+            const reportesCompletados = reportesError ? 0 : 
+              (reportes?.filter(r => r.estado === 'finalizado').length || 0);
+            const reportesPendientes = totalReportes - reportesCompletados;
+
+            // Calcular progreso
+            const territoriosCompletados = cicloActivo?.territorios_completados || 0;
+            const progresoPorcentaje = totalTerritorios > 0 ? 
+              Math.round((territoriosCompletados / totalTerritorios) * 100) : 0;
+
+            console.log(`📈 ${barrio}: ${territoriosCompletados}/${totalTerritorios} territorios (${progresoPorcentaje}%)`);
+
+            return {
+              barrio: barrio,
+              numero_ciclo: cicloActivo?.numero_ciclo || 1,
+              fecha_inicio: cicloActivo?.fecha_inicio || new Date().toISOString().split('T')[0],
+              total_territorios: totalTerritorios,
+              territorios_completados: territoriosCompletados,
+              progreso_porcentaje: progresoPorcentaje,
+              reportes_completados: reportesCompletados,
+              reportes_pendientes: reportesPendientes,
+              total_reportes: totalReportes,
+              estado: cicloActivo?.estado || 'sin_ciclo'
+            };
+          })
+        );
+
+        console.log(`✅ Fallback completado: ${progresoManual.length} barrios procesados`);
+
+        return res.json({
+          success: true,
+          data: progresoManual,
+          total: progresoManual.length,
+          metodo: 'fallback_mejorado'
+        });
+
+      } catch (fallbackError) {
+        console.error('❌ Error en fallback mejorado:', fallbackError);
         return res.status(500).json({
           success: false,
-          error: 'Error al obtener progreso',
-          message: ciclosError.message
+          error: 'Error en fallback manual',
+          message: fallbackError.message
         });
       }
-
-      // Procesar datos manualmente
-      const progresoManual = await Promise.all(
-        (ciclos || []).map(async (ciclo) => {
-          // Obtener total de territorios del barrio
-          const { data: manzanas, error: manzanasError } = await supabase
-            .from('manzanas_barrio_referencia')
-            .select('territorio')
-            .eq('barrio', ciclo.barrio);
-
-          const totalTerritorios = manzanasError ? 0 : (manzanas?.length || 0);
-          const territoriosCompletados = ciclo.progreso_territorios?.length || 0;
-          const progresoPorcentaje = totalTerritorios > 0 ? 
-            Math.round((territoriosCompletados / totalTerritorios) * 100) : 0;
-
-          return {
-            barrio: ciclo.barrio,
-            numero_ciclo: ciclo.numero_ciclo,
-            estado: ciclo.estado,
-            progreso_porcentaje: progresoPorcentaje,
-            territorios_completados: territoriosCompletados,
-            total_territorios: totalTerritorios,
-            fecha_inicio: ciclo.fecha_inicio,
-            dias_transcurridos: ciclo.fecha_inicio ? 
-              Math.floor((new Date() - new Date(ciclo.fecha_inicio)) / (1000 * 60 * 60 * 24)) : 0
-          };
-        })
-      );
-
-      return res.json({
-        success: true,
-        data: progresoManual,
-        total: progresoManual.length,
-        metodo: 'fallback'
-      });
     }
 
+    console.log(`✅ [ÉXITO] Función optimizada ejecutada correctamente`);
+    console.log(`📈 [DATOS] ${progreso?.length || 0} barrios obtenidos con método optimizado`);
+    
     res.json({
       success: true,
       data: progreso || [],
