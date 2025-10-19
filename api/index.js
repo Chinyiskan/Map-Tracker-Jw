@@ -664,6 +664,190 @@ app.get('/api/barrios', async (req, res) => {
   }
 });
 
+// ==========================================
+// ENDPOINTS ESPECÍFICOS PARA MAPAS.JS
+// ==========================================
+
+// GET /api/reportes/barrio/:barrio - Obtener reportes de un barrio específico
+app.get('/api/reportes/barrio/:barrio', async (req, res) => {
+  try {
+    const { barrio } = req.params;
+    
+    if (!barrio) {
+      return res.status(400).json({
+        success: false,
+        error: 'Parámetro barrio es requerido'
+      });
+    }
+    
+    console.log(`🔍 Buscando reportes para barrio: ${barrio}`);
+    
+    const { data, error } = await supabase
+      .from('reportes')
+      .select('*')
+      .eq('barrio', barrio)
+      .order('fecha', { ascending: false });
+    
+    if (error) {
+      throw new Error(`Error al obtener reportes del barrio: ${error.message}`);
+    }
+    
+    console.log(`📊 Reportes encontrados para ${barrio}: ${data?.length || 0}`);
+    
+    res.json({
+      success: true,
+      data: data || [],
+      total: data?.length || 0,
+      barrio: barrio
+    });
+  } catch (err) {
+    console.error(`❌ Error en GET /api/reportes/barrio/${req.params.barrio}:`, err.message);
+    res.status(500).json({
+      success: false,
+      error: 'Error al obtener reportes del barrio',
+      message: err.message
+    });
+  }
+});
+
+// GET /api/ciclos/barrio/:barrio/activo - Obtener ciclo activo de un barrio específico
+app.get('/api/ciclos/barrio/:barrio/activo', async (req, res) => {
+  try {
+    const { barrio } = req.params;
+    
+    if (!barrio) {
+      return res.status(400).json({
+        success: false,
+        error: 'Parámetro barrio es requerido'
+      });
+    }
+    
+    console.log(`🔍 Buscando ciclo activo para barrio: ${barrio}`);
+    
+    const { data, error } = await supabase
+      .from('ciclos')
+      .select('*')
+      .eq('barrio', barrio)
+      .eq('estado', 'activo')
+      .order('fecha_inicio', { ascending: false })
+      .limit(1);
+    
+    if (error) {
+      throw new Error(`Error al obtener ciclo activo: ${error.message}`);
+    }
+    
+    const cicloActivo = data && data.length > 0 ? data[0] : null;
+    
+    if (cicloActivo) {
+      console.log(`🔄 Ciclo activo encontrado para ${barrio}:`, cicloActivo.numero_ciclo);
+      res.json({
+        success: true,
+        data: cicloActivo
+      });
+    } else {
+      console.log(`ℹ️ No hay ciclo activo para ${barrio}`);
+      res.json({
+        success: false,
+        data: null,
+        message: 'No hay ciclo activo para este barrio'
+      });
+    }
+  } catch (err) {
+    console.error(`❌ Error en GET /api/ciclos/barrio/${req.params.barrio}/activo:`, err.message);
+    res.status(500).json({
+      success: false,
+      error: 'Error al obtener ciclo activo',
+      message: err.message
+    });
+  }
+});
+
+// GET /api/ciclos/barrio/:barrio/progreso - Obtener progreso específico de un barrio
+app.get('/api/ciclos/barrio/:barrio/progreso', async (req, res) => {
+  try {
+    const { barrio } = req.params;
+    
+    if (!barrio) {
+      return res.status(400).json({
+        success: false,
+        error: 'Parámetro barrio es requerido'
+      });
+    }
+    
+    console.log(`🔍 Calculando progreso para barrio: ${barrio}`);
+    
+    // Obtener reportes del barrio
+    const { data: reportes, error: reportesError } = await supabase
+      .from('reportes')
+      .select('*')
+      .eq('barrio', barrio);
+    
+    if (reportesError) {
+      throw new Error(`Error al obtener reportes: ${reportesError.message}`);
+    }
+    
+    // Obtener ciclo activo del barrio
+    const { data: ciclos, error: ciclosError } = await supabase
+      .from('ciclos')
+      .select('*')
+      .eq('barrio', barrio)
+      .eq('estado', 'activo')
+      .order('fecha_inicio', { ascending: false })
+      .limit(1);
+    
+    if (ciclosError) {
+      console.warn(`⚠️ Error al obtener ciclos: ${ciclosError.message}`);
+    }
+    
+    const cicloActivo = ciclos && ciclos.length > 0 ? ciclos[0] : null;
+    
+    // Calcular estadísticas básicas
+    const totalReportes = reportes?.length || 0;
+    const reportesCompletados = reportes?.filter(r => r.estado === 'completado').length || 0;
+    const reportesPendientes = reportes?.filter(r => r.estado === 'pendiente').length || 0;
+    
+    // Calcular progreso porcentual
+    let progresoPercentaje = 0;
+    if (totalReportes > 0) {
+      progresoPercentaje = Math.round((reportesCompletados / totalReportes) * 100);
+    }
+    
+    // Obtener territorios únicos trabajados
+    const territoriosUnicos = new Set(reportes?.map(r => r.territorio).filter(Boolean));
+    const totalTerritorios = territoriosUnicos.size;
+    
+    const progreso = {
+      barrio: barrio,
+      progreso_porcentaje: progresoPercentaje,
+      reportes_completados: reportesCompletados,
+      reportes_pendientes: reportesPendientes,
+      total_reportes: totalReportes,
+      total_territorios: totalTerritorios,
+      ciclo_activo: cicloActivo,
+      estado: progresoPercentaje === 100 ? 'completado' : 'en_progreso',
+      ultima_actualizacion: new Date().toISOString()
+    };
+    
+    console.log(`📈 Progreso calculado para ${barrio}:`, {
+      porcentaje: progresoPercentaje,
+      completados: reportesCompletados,
+      total: totalReportes
+    });
+    
+    res.json({
+      success: true,
+      data: progreso
+    });
+  } catch (err) {
+    console.error(`❌ Error en GET /api/ciclos/barrio/${req.params.barrio}/progreso:`, err.message);
+    res.status(500).json({
+      success: false,
+      error: 'Error al calcular progreso del barrio',
+      message: err.message
+    });
+  }
+});
+
 // Manejo de errores
 app.use((error, req, res, next) => {
   console.error('Error:', error);
