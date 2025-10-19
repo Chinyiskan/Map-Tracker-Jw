@@ -515,7 +515,10 @@ export const UI: UIInterface = {
   validateForm(form: HTMLFormElement, rules: ValidationRules = {}): ValidationResult {
     const errors: Record<string, string> = {};
     const formData = new FormData(form);
-    const data = Object.fromEntries(formData.entries()) as Record<string, string>;
+    const data: Record<string, string> = {};
+    formData.forEach((value, key) => {
+      data[key] = value.toString();
+    });
     
     // Validaciones por defecto
     const defaultRules: DefaultValidationRules = {

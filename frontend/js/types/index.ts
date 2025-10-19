@@ -326,14 +326,167 @@ export interface Alert {
   threshold: number;
 }
 
-export interface DashboardWidget {
+// types/dashboard.types.ts
+export interface DashboardFilters {
+  barrio?: string;
+  periodo: 'mes' | 'semana' | 'año' | 'todo';
+  estado?: string;
+}
+
+export interface DateRange {
+  start: string;
+  end: string;
+}
+
+export interface BarrioDesequilibrio {
+  barrio: string;
+  frecuenciaMensual: number;
+  frecuenciaEsperada: number;
+  progresoPorcentaje: number;
+  territoriosCompletados: number;
+  totalTerritorios: number;
+  diasTranscurridos: number;
+  estado: '🟢' | '🟡' | '🔴';
+  descripcion: string;
+  desviacion: number;
+  territoriosDelMesActual: number;
+}
+
+export interface BarriosProgressChartConfig {
+  api: {
+    endpoint: string;
+    timeout: number;
+  };
+  theme: 'light' | 'dark';
+  animations: boolean;
+  autoRefresh: boolean;
+  refreshInterval: number;
+  showStats: boolean;
+}
+
+export interface ChartInstance {
+  destroy(): void;
+}
+
+export interface ReporteAPI {
   id: string;
+  fecha: string;
+  barrio: string;
+  capitan: string;
+  estado: string;
+  manzanas?: string;
+  observaciones?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CicloProgresoAPI {
+  barrio: string;
+  progreso_porcentaje: number;
+  territorios_completados: number;
+  total_territorios: number;
+  dias_transcurridos: number;
+}
+
+// ==========================================
+// INTERFACES PARA ADMIN.JS
+// ==========================================
+
+export interface AdminState {
+  reportes: ReporteAPI[];
+  salidas: SalidaAPI[];
+  capitanes: Capitan[];
+  filtros: AdminFilters;
+  charts: AdminCharts;
+  barriosProgressChart: ChartInstance | null;
+  pagination: PaginationState;
+}
+
+export interface AdminFilters {
+  barrio: string;
+  periodo: 'semana' | 'mes' | 'año' | 'todo';
+  estado: string;
+}
+
+export interface AdminCharts {
+  barrios: ChartInstance | null;
+  mes: ChartInstance | null;
+}
+
+export interface PaginationState {
+  currentPage: number;
+  itemsPerPage: number;
+  totalItems: number;
+}
+
+export interface SalidaAPI {
+  id: string | number;
+  capitan_id: string | number;
+  barrio_asignado: string;
+  dia_semana: string;
+  hora: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface SalidaFormData {
+  id?: string;
+  capitan_id: string;
+  barrio_asignado: string;
+  dia_semana: string;
+  hora: string;
+  minutos?: string;
+  time?: string;
+}
+
+export interface AdminStats {
+  total: number;
+  porBarrio: Record<string, number>;
+  porMes: Record<string, number>;
+  barrioMasActivo: string;
+  ultimoReporte: ReporteAPI | null;
+}
+
+export interface ValidationResult {
+  isValid: boolean;
+  errors: Record<string, string>;
+}
+
+export interface ConfirmDialogOptions {
   title: string;
-  type: 'metric' | 'chart' | 'table' | 'status';
-  config: WidgetConfig;
+  message: string;
+  confirmText?: string;
+  cancelText?: string;
+}
+
+// Interfaces para componentes de UI
+export interface CompactCardConfig {
+  onActionClick?: (event: ActionClickEvent) => void;
+  showActions?: boolean;
+  actionButtons?: ActionButton[];
+}
+
+export interface ActionClickEvent {
+  action: string;
+  id: string | number;
   data?: any;
 }
 
+export interface ActionButton {
+  action: string;
+  label: string;
+  icon?: string;
+  className?: string;
+}
+
+// Declaraciones globales para admin
+declare global {
+  interface Window {
+    Chart: any;
+  }
+}
+
+export {};
 export interface WidgetConfig {
   refreshInterval?: number;
   autoRefresh?: boolean;
@@ -343,4 +496,54 @@ export interface WidgetConfig {
     x: number;
     y: number;
   };
+}
+declare global {
+  interface Window {
+    AdminManager: any;
+  }
+}
+
+// Interfaces para capitanes.ts
+export interface CapitanData {
+  id?: string;
+  nombre: string;
+  apellido: string;
+  telefono?: string;
+  email?: string;
+  activo?: boolean;
+}
+
+export interface SalidaCapitan {
+  id?: string;
+  capitan_id: string;
+  barrio_asignado: string;
+  dia_semana: string;
+  hora: string;
+  capitanes: CapitanData;
+}
+
+export interface CapitanFilters {
+  dia?: string;
+  horario?: string;
+}
+
+export interface CapitanFormData {
+  id?: string;
+  nombre: string;
+  apellido: string;
+  telefono?: string;
+  email?: string;
+  barrio_asignado: string;
+  dia_semana: string;
+  hora: string;
+  minutos?: string;
+}
+
+export interface BarrioOption {
+  value: string;
+  label: string;
+}
+
+export interface TooltipContainer extends HTMLElement {
+  classList: DOMTokenList;
 }
