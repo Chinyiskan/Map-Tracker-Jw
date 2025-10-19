@@ -502,7 +502,7 @@ export class BarriosProgressChart implements BarriosProgressChartInterface {
   /**
    * Normalizar manzanas
    */
-  public normalizarManzanas(manzanas: string | null): string[] {
+  public normalizarManzanas(manzanas: string | null | undefined): string[] {
     if (!manzanas) return [];
 
     const manzanasArray = manzanas

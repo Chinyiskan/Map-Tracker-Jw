@@ -110,7 +110,7 @@ const MapasConsultaManager: MapasConsultaManagerInterface = {
     filtros.forEach(filtroId => {
       const elemento = document.getElementById(filtroId);
       if (elemento) {
-        elemento.addEventListener('change', () => this._applyFilters());
+        elemento.addEventListener('change', () => this._applyFilters(this._getCurrentFilters()));
       }
     });
 
@@ -237,8 +237,8 @@ const MapasConsultaManager: MapasConsultaManagerInterface = {
    * Aplicar filtros
    * @private
    */
-  _applyFilters(): void {
-    this._state.currentFilters = this._getCurrentFilters();
+  _applyFilters(filters: ConsultaFilters): void {
+    this._state.currentFilters = filters;
   },
 
   /**
@@ -429,7 +429,7 @@ const MapasConsultaManager: MapasConsultaManagerInterface = {
     salidas.forEach(salida => {
       resultados.push({
         tipo: 'salida',
-        id: salida.id,
+        id: salida.id || 'sin-id',
         fecha: null, // Las salidas no tienen fecha específica
         barrio: salida.barrio_asignado,
         territorio: null,
