@@ -156,6 +156,7 @@ export interface ReporteDetalles {
 export interface Capitan {
   id: string;
   nombre: string;
+  apellido?: string;
   email?: string;
   telefono?: string;
   barrios: string[];
