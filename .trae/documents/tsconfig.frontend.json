@@ -1,0 +1,37 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "node",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "strict": false,
+    "allowJs": true,
+    "checkJs": false,
+    "noEmit": true,
+    "isolatedModules": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "baseUrl": "./frontend",
+    "paths": {
+      "@/*": ["./js/*"],
+      "@utils/*": ["./js/utils/*"],
+      "@components/*": ["./js/components/*"],
+      "@types/*": ["./js/types/*"],
+      "@services/*": ["./js/services/*"]
+    }
+  },
+  "include": [
+    "frontend/js/**/*.ts",
+    "frontend/js/**/*.d.ts",
+    "frontend/js/**/*.js"
+  ],
+  "exclude": [
+    "node_modules",
+    "backend",
+    "frontend/js/legacy"
+  ]
+}

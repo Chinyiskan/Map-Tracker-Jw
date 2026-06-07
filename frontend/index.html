@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sistema de Reportes Territoriales</title>
+    <link rel="stylesheet" href="css/design-system.css" />
+    <link rel="stylesheet" href="css/components.css" />
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <div class="container">
+
+      <main class="flex flex-col items-center justify-center" style="min-height: 100vh; padding: var(--space-lg) 0;">
+        <!-- Header con logo -->
+        <header class="text-center mb-xl">
+          <div class="flex justify-center mb-lg">
+            <div class="bg-accent p-lg rounded-xl shadow-lg">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+                <path d="M2 17L12 22L22 17" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+                <path d="M2 12L12 17L22 12" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          </div>
+          <h1 class="text-3xl font-bold text-primary mb-sm">Sistema de Reportes</h1>
+          <p class="text-lg text-secondary">Gestiona y supervisa los reportes territoriales de manera eficiente</p>
+        </header>
+        
+        <!-- Botones principales -->
+        <div class="grid grid--1 gap-lg" style="max-width: 400px; width: 100%;">
+          <button id="btn-informar" class="card transition-normal" style="padding: var(--space-xl); text-align: left; border: none; cursor: pointer; background: var(--bg-secondary);">
+            <div class="flex items-center gap-lg">
+              <div class="bg-accent p-md rounded-lg flex items-center justify-center" style="min-width: 56px; height: 56px;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+                  <path d="M2 17L12 22L22 17" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <div class="flex-1">
+                <h3 class="text-lg font-semibold text-primary mb-xs">Informar</h3>
+                <p class="text-sm text-secondary">Registra un nuevo reporte territorial</p>
+              </div>
+            </div>
+          </button>
+          
+          <button id="btn-consultar" class="card transition-normal" style="padding: var(--space-xl); text-align: left; border: none; cursor: pointer; background: var(--bg-secondary);">
+            <div class="flex items-center gap-lg">
+              <div class="bg-primary p-md rounded-lg flex items-center justify-center" style="min-width: 56px; height: 56px;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" stroke="white" stroke-width="2"/>
+                  <circle cx="12" cy="10" r="3" stroke="white" stroke-width="2"/>
+                </svg>
+              </div>
+              <div class="flex-1">
+                <h3 class="text-lg font-semibold text-primary mb-xs">Consultar</h3>
+                <p class="text-sm text-secondary">Revisa el estado actual de los mapas</p>
+              </div>
+            </div>
+          </button>
+        </div>
+        
+        <!-- Footer -->
+        <footer class="text-center mt-xl">
+          <p class="text-sm text-muted">Versión 2.1.0 • Sistema Territorial JW</p>
+        </footer>
+      </main>
+    </div>
+    
+    <!-- Manejador de errores JSON (debe cargarse primero) -->
+    <script type="module" src="js/json-error-handler.js"></script>
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>

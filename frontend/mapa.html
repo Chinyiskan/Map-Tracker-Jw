@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mapa Territorial</title>
+  <link rel="stylesheet" href="css/design-system.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    /* Diseño de cuadrícula responsivo para modo reporte */
+    .mapa-layout-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: var(--space-lg);
+      align-items: start;
+      margin-bottom: var(--space-lg);
+      width: 100%;
+    }
+    
+    .mapa-col-principal {
+      min-width: 0;
+    }
+    
+    .mapa-col-formulario {
+      position: sticky;
+      top: 20px;
+    }
+    
+    @media (max-width: 960px) {
+      .mapa-layout-grid {
+        grid-template-columns: 1fr;
+      }
+      .mapa-col-formulario {
+        position: static;
+      }
+    }
+
+    /* Estilos para el tooltip de ayuda de estado de reporte */
+    .icon-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 1px solid var(--border-color, #e5e7eb);
+      color: var(--text-secondary, #6b7280);
+      background: var(--surface, #fff);
+      cursor: pointer;
+      transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    }
+    .icon-button:hover { background: var(--surface-2, #f9fafb); color: var(--text-primary, #111827); border-color: var(--border-color-strong, #d1d5db); }
+    .icon-button:focus { outline: 2px solid var(--accent, #3b82f6); outline-offset: 2px; }
+
+    .tooltip-bubble {
+      position: absolute;
+      top: -9999px; left: -9999px;
+      opacity: 0; pointer-events: none;
+      z-index: 1000;
+      min-width: 260px;
+      max-width: min(90vw, 360px);
+      background: var(--bg-surface, #fff);
+      border: 1px solid var(--border-color, #e5e7eb);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.08), 0 3px 6px rgba(0,0,0,0.06);
+      border-radius: 10px;
+      transform: translateY(-6px);
+      transition: opacity .15s ease, transform .15s ease;
+    }
+    .tooltip-bubble.is-visible { opacity: 1; pointer-events: auto; transform: translateY(0); }
+    .tooltip-bubble::after {
+      content: '';
+      position: absolute;
+      top: -7px; left: 18px;
+      width: 12px; height: 12px;
+      background: inherit;
+      border-left: 1px solid var(--border-color, #e5e7eb);
+      border-top: 1px solid var(--border-color, #e5e7eb);
+      transform: rotate(45deg);
+    }
+    .tooltip-bubble__content { padding: 10px 12px; }
+    .tooltip-bubble__row { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+    .tooltip-text { font-size: 12px; color: var(--text-secondary, #6b7280); }
+    .tooltip-badge {
+      font-size: 11px; font-weight: 600;
+      border-radius: 999px; padding: 2px 8px;
+      border: 1px solid transparent;
+    }
+    .tooltip-badge--start { color: #1f2937; background: #e5e7eb; border-color: #d1d5db; }
+    .tooltip-badge--progress { color: #1e40af; background: #dbeafe; border-color: #bfdbfe; }
+    .tooltip-badge--done { color: #065f46; background: #d1fae5; border-color: #a7f3d0; }
+  </style>
+</head>
+<body>
+  <div class="container" style="padding: var(--space-md); max-width: 100%;">
+
+    <!-- Header -->
+    <div class="text-center mb-md">
+      <h2 id="titulo-barrio" class="text-xl font-semibold text-primary mb-xs">Mapa Territorial</h2>
+    </div>
+
+    <!-- Leyenda y Grilla del Mapa -->
+    <div class="mapa-layout-grid">
+      
+      <!-- Columna Principal (Mapa) -->
+      <div class="mapa-col-principal">
+        
+        <!-- Leyenda -->
+        <div class="flex justify-center gap-md mb-sm" style="font-size: var(--font-size-xs);">
+          <div class="flex items-center gap-xs">
+            <div style="width: 14px; height: 14px; background: rgba(255, 77, 77, 0.65); border: 2px solid rgba(255, 77, 77, 0.9); border-radius: 2px;"></div>
+            <span>Pendiente</span>
+          </div>
+          <div class="flex items-center gap-xs">
+            <div style="width: 14px; height: 14px; background: rgba(39, 174, 96, 0.65); border: 2px solid rgba(39, 174, 96, 0.95); border-radius: 2px;"></div>
+            <span>Trabajada</span>
+          </div>
+          <div class="flex items-center gap-xs legend-selection">
+            <div style="width: 14px; height: 14px; background: rgba(41, 128, 185, 0.75); border: 2px solid rgba(41, 128, 185, 1); border-radius: 2px;"></div>
+            <span>Seleccionada</span>
+          </div>
+          <div class="flex items-center gap-xs legend-selection">
+            <div style="width: 14px; height: 14px; background: rgba(211, 84, 0, 0.75); border: 2px solid rgba(211, 84, 0, 1); border-radius: 2px;"></div>
+            <span>Sel. Trabajada</span>
+          </div>
+        </div>
+
+        <!-- Progreso del Barrio -->
+        <div id="barrio-progress" class="mb-sm"></div>
+
+        <!-- Mapa Interactivo -->
+        <div class="card mb-md">
+          <div class="card__body" style="padding: 0; position: relative;">
+            <!-- Controles de Zoom -->
+            <div id="zoom-controls" class="zoom-controls" style="position: absolute; top: 10px; right: 10px; z-index: 10; display: none; flex-direction: column; gap: 4px;">
+              <button type="button" id="btn-zoom-in" class="btn btn--secondary" style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center;" title="Acercar">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <path d="M21 21l-4.35-4.35"></path>
+                  <line x1="11" y1="8" x2="11" y2="14"></line>
+                  <line x1="8" y1="11" x2="14" y2="11"></line>
+                </svg>
+              </button>
+              <button type="button" id="btn-zoom-out" class="btn btn--secondary" style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center;" title="Alejar">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <path d="M21 21l-4.35-4.35"></path>
+                  <line x1="8" y1="11" x2="14" y2="11"></line>
+                </svg>
+              </button>
+              <button type="button" id="btn-zoom-center" class="btn btn--secondary" style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center;" title="Centrar">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="3"></circle>
+                  <circle cx="12" cy="12" r="1"></circle>
+                  <path d="M12 1v6m0 6v6"></path>
+                  <path d="M1 12h6m6 0h6"></path>
+                </svg>
+              </button>
+            </div>
+            
+            <div id="mapa-container" class="mapa-container" style="width: 100%; height: 65vh; min-height: 380px; border-radius: var(--radius-md); background: var(--bg-elevated); display: flex; align-items: center; justify-content: center; color: var(--text-muted); overflow: hidden;">
+              <div class="mapa-placeholder text-center">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="margin-bottom: var(--space-sm);">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                  <circle cx="12" cy="10" r="3"></circle>
+                </svg>
+                <p class="text-sm">Cargando mapa...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Manzanas Seleccionadas -->
+        <div id="lista-manzanas" class="card mb-md" style="display: none;">
+          <div class="card__header" style="padding: var(--space-sm) var(--space-md);">
+            <h4 class="text-sm font-semibold">Manzanas Seleccionadas</h4>
+          </div>
+          <div class="card__body" style="padding: var(--space-sm) var(--space-md);">
+            <div id="manzanas-container" class="flex flex-wrap gap-xs">
+              <!-- Las manzanas seleccionadas aparecerán aquí -->
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Columna Formulario (Solo en modo reporte) -->
+      <div id="panel-formulario" class="card mapa-col-formulario" style="display: none;">
+        <div class="card__header">
+          <h3 class="text-lg font-semibold text-primary">Datos del Reporte</h3>
+        </div>
+        <div class="card__body">
+          <form id="datos-form">
+            <div class="form-group">
+              <label for="capitan-input" class="form-label">Capitán</label>
+              <input type="text" id="capitan-input" name="capitanInput" class="form-input" placeholder="Nombre del capitán" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="fecha-reporte" class="form-label">Fecha del Reporte</label>
+              <input type="date" id="fecha-reporte" name="fechaReporte" class="form-input" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="estado-reporte" class="form-label">Estado del Reporte</label>
+              <select id="estado-reporte" name="estadoReporte" class="form-input form-select" required>
+                <option value="" disabled selected>Selecciona un estado</option>
+                <option value="iniciado">Iniciado</option>
+                <option value="en_progreso">En progreso</option>
+                <option value="finalizado">Finalizado</option>
+              </select>
+              <div class="mt-xs" style="position: relative;">
+                <button id="estado-info-btn" type="button" class="icon-button" aria-label="Información sobre los estados" title="Información sobre estados">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <circle cx="12" cy="16" r="1"></circle>
+                  </svg>
+                </button>
+              </div>
+              <div id="estado-tooltip" class="tooltip-bubble" role="tooltip" aria-hidden="true">
+                <div class="tooltip-bubble__content">
+                  <div class="tooltip-bubble__row">
+                    <span class="tooltip-badge tooltip-badge--start">Iniciado</span>
+                    <span class="tooltip-text">Comienza desde cero el trabajo del territorio.</span>
+                  </div>
+                  <div class="tooltip-bubble__row">
+                    <span class="tooltip-badge tooltip-badge--progress">En progreso</span>
+                    <span class="tooltip-text">Ya inició y se continúa el trabajo.</span>
+                  </div>
+                  <div class="tooltip-bubble__row">
+                    <span class="tooltip-badge tooltip-badge--done">Finalizado</span>
+                    <span class="tooltip-text">El territorio quedó completamente cubierto.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label for="observaciones-input" class="form-label">
+                Observaciones <span class="text-muted">(Opcional)</span>
+              </label>
+              <input type="text" id="observaciones-input" name="observacionesInput" class="form-input" placeholder="Ej: visita del circuito, campaña, llovió e hicimos cartas, etc.">
+              <small class="text-xs text-secondary mt-xs" style="display: block; opacity: 0.85; margin-top: 4px;">Nota: Puedes especificar el tipo de actividad, si hubo lluvia o detalles especiales de la predicación.</small>
+            </div>
+          </form>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Sección de Consulta (Solo en modo consulta, abajo del mapa) -->
+    <div id="panel-consulta" class="card mb-md" style="display: none; width: 100%;">
+      <div class="card__header">
+        <h3 class="text-lg font-semibold text-primary">Historial y Filtro de Reportes</h3>
+      </div>
+      <div class="card__body">
+        
+        <!-- Mini Filtro de Fechas -->
+        <div class="flex flex-wrap gap-md items-end mb-lg" style="background: var(--bg-secondary); padding: var(--space-md); border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+          <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 150px;">
+            <label for="filtro-fecha-desde" class="form-label" style="font-size: var(--font-size-sm); margin-bottom: 4px;">Desde:</label>
+            <input type="date" id="filtro-fecha-desde" class="form-input" style="padding: var(--space-sm);">
+          </div>
+          <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 150px;">
+            <label for="filtro-fecha-hasta" class="form-label" style="font-size: var(--font-size-sm); margin-bottom: 4px;">Hasta:</label>
+            <input type="date" id="filtro-fecha-hasta" class="form-input" style="padding: var(--space-sm);">
+          </div>
+          <button type="button" id="btn-limpiar-filtro" class="btn btn--secondary" style="height: 40px; padding: 0 var(--space-md);">Limpiar</button>
+        </div>
+
+        <!-- Tabla de Historial -->
+        <div class="table-wrapper">
+          <table class="reportes-table">
+            <thead>
+              <tr>
+                <th class="table-cell table-cell--header">Fecha</th>
+                <th class="table-cell table-cell--header">Capitán</th>
+                <th class="table-cell table-cell--header">Manzanas</th>
+                <th class="table-cell table-cell--header">Estado</th>
+                <th class="table-cell table-cell--header">Observaciones</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-reportes-cuerpo">
+              <!-- Cargado dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Botones de Navegación del Pie de Página -->
+    <div class="flex gap-sm justify-center mt-md" style="max-width: 500px; margin: var(--space-md) auto 0 auto;">
+      
+      <!-- Contenedor Botones Modo Reporte -->
+      <div id="btn-group-reporte" class="flex gap-sm w-100" style="display: none; width: 100%;">
+        <button type="button" id="btn-volver-reporte" class="btn btn--secondary flex-1" onclick="window.location.href='reportes.html'">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+          </svg>
+          Volver
+        </button>
+        <button type="button" id="btn-enviar-reporte" class="btn btn--primary flex-1">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          Enviar Reporte
+        </button>
+      </div>
+
+      <!-- Contenedor Botones Modo Consulta -->
+      <div id="btn-group-consulta" class="flex gap-sm w-100" style="display: none; width: 100%;">
+        <button type="button" id="btn-volver-inicio" class="btn btn--secondary flex-1" onclick="window.location.href='index.html'">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z"/>
+          </svg>
+          Inicio
+        </button>
+        <button type="button" id="btn-seleccionar-barrio" class="btn btn--primary flex-1" onclick="window.location.href='consulta.html'">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          Otro Barrio
+        </button>
+      </div>
+
+    </div>
+  </div>
+  
+  <!-- Scripts -->
+  <script type="module" src="js/json-error-handler.js"></script>
+  <script type="module" src="js/ui.js"></script>
+  <script type="module" src="js/mapas.js"></script>
+
+  <!-- Inicialización -->
+  <script type="module">
+    import { MapasManager } from './js/mapas.js';
+    document.addEventListener('DOMContentLoaded', () => {
+      MapasManager.init();
+    });
+  </script>
+</body>
+</html>

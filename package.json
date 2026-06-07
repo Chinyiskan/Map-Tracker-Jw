@@ -1,0 +1,37 @@
+{
+  "name": "map-tracker-jw",
+  "version": "2.1.0",
+  "description": "Sistema de Reportes Territoriales JW - Arquitectura Modular con UI/UX Optimizada",
+  "type": "module",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "nodemon backend/server.js",
+    "test-db": "node -e \"import('./backend/config/db.js').then(m => m.testConnection())\"",
+    "lint": "eslint backend/",
+    "lint:fix": "eslint backend/ --fix",
+    "audit": "npm audit",
+    "audit-fix": "npm audit fix"
+  },
+  "dependencies": {
+    "compression": "^1.8.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.19.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "territorial",
+    "reports",
+    "jw",
+    "maps"
+  ],
+  "author": "JW Territory Team",
+  "license": "MIT",
+  "devDependencies": {
+    "eslint": "^9.33.0",
+    "nodemon": "^3.1.10"
+  }
+}

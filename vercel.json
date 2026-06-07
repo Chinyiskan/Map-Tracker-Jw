@@ -1,0 +1,18 @@
+{
+  "version": 2,
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/usuario",
+      "destination": "/frontend/reportes.html"
+    },
+    {
+      "source": "/:path((?!api/|frontend/|usuario).*)",
+      "destination": "/frontend/:path*"
+    }
+  ]
+}
