@@ -42,6 +42,9 @@ const SELECTION_COLORS = {
  */
 export const MapasManager = {
   
+  // Caché de archivos SVG para carga instantánea
+  _svgCache: new Map(),
+  
   // Estado interno del módulo
   _state: {
     currentMap: null,
@@ -560,6 +563,11 @@ export const MapasManager = {
   
   async _loadSVGFile(barrio) {
     try {
+      if (this._svgCache && this._svgCache.has(barrio)) {
+        console.log(`⚡ Recuperando SVG de caché para: ${barrio}`);
+        return this._svgCache.get(barrio);
+      }
+
       // Normalizar nombre del barrio para el archivo
       const normalizedBarrio = this._normalizeBarrioName(barrio);
       const svgPath = `mapas/${normalizedBarrio}.svg`;
@@ -572,7 +580,14 @@ export const MapasManager = {
         throw new Error(`No se pudo cargar el archivo SVG: ${response.status}`);
       }
       
-      return await response.text();
+      const text = await response.text();
+      
+      if (!this._svgCache) {
+        this._svgCache = new Map();
+      }
+      this._svgCache.set(barrio, text);
+      
+      return text;
       
     } catch (error) {
       console.error('❌ Error al cargar archivo SVG:', error);
@@ -1233,7 +1248,7 @@ export const MapasManager = {
   _zoomIn() {
     if (!this._state.svgElement || !this._state.zoomState) return;
     
-    const newScale = Math.min(this._state.zoomState.scale * 1.3, this._state.zoomState.maxScale);
+    const newScale = Math.min(this._state.zoomState.scale * 1.15, this._state.zoomState.maxScale);
     this._applyZoom(newScale, this._state.zoomState.translateX, this._state.zoomState.translateY);
   },
   
@@ -1244,7 +1259,7 @@ export const MapasManager = {
   _zoomOut() {
     if (!this._state.svgElement || !this._state.zoomState) return;
     
-    const newScale = Math.max(this._state.zoomState.scale / 1.3, this._state.zoomState.minScale);
+    const newScale = Math.max(this._state.zoomState.scale / 1.15, this._state.zoomState.minScale);
     this._applyZoom(newScale, this._state.zoomState.translateX, this._state.zoomState.translateY);
   },
   
@@ -1362,7 +1377,7 @@ export const MapasManager = {
     this._state.zoomState.translateY = translateY;
     
     // Aplicar transformación
-    const transform = `translate(${translateX}, ${translateY}) scale(${scale})`;
+    const transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
     this._state.svgElement.style.transform = transform;
     this._state.svgElement.style.transformOrigin = 'center center';
     this._state.svgElement.style.transition = 'transform 0.3s ease';
