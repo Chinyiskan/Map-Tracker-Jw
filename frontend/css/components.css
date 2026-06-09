@@ -1752,6 +1752,111 @@
   margin-bottom: var(--space-md);
 }
 
+/* === FLOATING ACTION BUTTON (FAB) === */
+.fab-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: var(--z-fixed);
+  pointer-events: none; /* Permite clicks en elementos subyacentes */
+}
+
+.fab-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-full);
+  background-color: var(--accent-primary);
+  color: white;
+  border: none;
+  box-shadow: var(--shadow-lg);
+  cursor: pointer;
+  pointer-events: auto; /* Restablece clicks */
+  transition: transform var(--transition-normal), 
+              background-color var(--transition-normal), 
+              box-shadow var(--transition-normal), 
+              opacity var(--transition-normal),
+              visibility var(--transition-normal);
+  opacity: 0;
+  transform: translateY(20px) scale(0.8);
+  visibility: hidden;
+}
+
+.fab-button.is-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  visibility: visible;
+}
+
+.fab-button:hover {
+  background-color: var(--accent-hover);
+  box-shadow: var(--shadow-xl);
+  transform: scale(1.05);
+}
+
+.fab-button:focus-visible {
+  outline: 2px solid var(--accent-focus);
+  outline-offset: 2px;
+}
+
+.fab-button:active {
+  transform: scale(0.95);
+}
+
+.fab-button svg {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 24px;
+  height: 24px;
+  stroke-width: 2.5px;
+}
+
+.fab-button--up svg {
+  transform: rotate(180deg);
+}
+
+/* Ocultar en pantallas de escritorio >= 1024px */
+@media (min-width: 1024px) {
+  .fab-container {
+    display: none !important;
+  }
+}
+
+/* === CONTROLES DE MODO DE MAPA (PUNTERO/MANO) === */
+.zoom-controls .btn.active {
+  background-color: var(--accent-primary) !important;
+  border-color: var(--accent-primary) !important;
+  color: white !important;
+}
+
+.zoom-controls .btn.active:hover {
+  background-color: var(--accent-hover) !important;
+}
+
+/* Cursores para el Modo Paneo (Arrastre) en el Mapa */
+.mapa-container.mode-pan {
+  cursor: grab !important;
+}
+
+.mapa-container.mode-pan:active {
+  cursor: grabbing !important;
+}
+
+.mapa-container.mode-pan svg {
+  cursor: grab !important;
+}
+
+.mapa-container.mode-pan svg:active {
+  cursor: grabbing !important;
+}
+
+.mapa-container.mode-pan svg .manzana,
+.mapa-container.mode-pan svg .manzana-touch-area {
+  cursor: inherit !important;
+}
+
+
 /* === PRINT STYLES === */
 @media print {
   .nav,
@@ -1760,7 +1865,8 @@
   .toast,
   .tooltip,
   .dropdown,
-  .password-toggle {
+  .password-toggle,
+  .fab-container {
     display: none !important;
   }
   

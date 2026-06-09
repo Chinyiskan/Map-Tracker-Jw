@@ -3,6 +3,7 @@
 
 import { UI } from './ui.js';
 import { JSONUtils } from './json-utils.js';
+import { FloatingActionButton } from './components/floating-action-button.js';
 
 // Configuración de API
 const API_BASE = '/api';
@@ -53,7 +54,9 @@ export const MapasManager = {
     // Nuevo: estado en tiempo real de territorios
     territoryRealTimeStatus: new Map(), // ID -> 'pendiente'|'trabajada'
     // Modo consulta
-    isConsultaMode: false
+    isConsultaMode: false,
+    // Modo arrastre/mano
+    isPanMode: false
   },
   
   // Configuración de barrios disponibles
@@ -92,6 +95,9 @@ export const MapasManager = {
       if (initialBarrio) {
         await this.loadMap(initialBarrio);
       }
+      
+      // Inicializar el Botón de Acción Flotante (FAB) para móviles
+      FloatingActionButton.init();
       
       console.log('✅ MapasManager inicializado correctamente');
       
@@ -1039,6 +1045,12 @@ export const MapasManager = {
    * Seleccionar territorio
    */
   selectTerritory(territoryId) {
+    // En modo arrastre (mano), no permitir selección de territorios
+    if (this._state.isPanMode) {
+      console.log('✋ Selección deshabilitada en modo arrastre (mano)');
+      return;
+    }
+    
     // En modo consulta, no permitir selección de territorios
     if (this._state.isConsultaMode) {
       console.log('🔍 Selección deshabilitada en modo consulta');
@@ -1194,6 +1206,14 @@ export const MapasManager = {
     btnZoomOut.addEventListener('click', () => this._zoomOut());
     btnZoomCenter.addEventListener('click', () => this._zoomCenter());
     
+    // Event listeners para botones de modo (puntero/mano)
+    const btnModeSelect = document.getElementById('btn-mode-select');
+    const btnModePan = document.getElementById('btn-mode-pan');
+    if (btnModeSelect && btnModePan) {
+      btnModeSelect.addEventListener('click', () => this.setMapMode('select'));
+      btnModePan.addEventListener('click', () => this.setMapMode('pan'));
+    }
+    
     // Mostrar controles solo cuando hay un mapa cargado
     if (this._state.svgElement) {
       zoomControls.style.display = 'flex';
@@ -1201,6 +1221,9 @@ export const MapasManager = {
     
     // Inicializar gestos táctiles para zoom
     this._initTouchGestures();
+    
+    // Inicializar controles de arrastre para PC
+    this._initDragControls();
   },
   
   /**
@@ -1239,6 +1262,97 @@ export const MapasManager = {
    * Aplicar transformación de zoom al SVG
    * @private
    */
+  /**
+   * Cambiar modo de mapa (select o pan)
+   * @param {string} mode - 'select' o 'pan'
+   */
+  setMapMode(mode) {
+    const btnModeSelect = document.getElementById('btn-mode-select');
+    const btnModePan = document.getElementById('btn-mode-pan');
+    
+    if (mode === 'pan') {
+      this._state.isPanMode = true;
+      
+      if (btnModeSelect) btnModeSelect.classList.remove('active');
+      if (btnModePan) btnModePan.classList.add('active');
+      
+      if (this._state.mapContainer) {
+        this._state.mapContainer.classList.add('mode-pan');
+      }
+      
+      console.log('✋ Modo Mano (paneo) activado');
+    } else {
+      this._state.isPanMode = false;
+      
+      if (btnModeSelect) btnModeSelect.classList.add('active');
+      if (btnModePan) btnModePan.classList.remove('active');
+      
+      if (this._state.mapContainer) {
+        this._state.mapContainer.classList.remove('mode-pan');
+      }
+      
+      console.log('🖱️ Modo Puntero (selección) activado');
+    }
+  },
+  
+  /**
+   * Inicializar controles de arrastre (pan) por ratón para PC
+   * @private
+   */
+  _initDragControls() {
+    if (!this._state.mapContainer) return;
+    
+    let isDragging = false;
+    let lastMousePos = { x: 0, y: 0 };
+    let initialTranslate = { x: 0, y: 0 };
+    
+    this._state.mapContainer.addEventListener('mousedown', (e) => {
+      // Solo arrastrar si estamos en modo pan (mano) y es el botón izquierdo del ratón
+      if (!this._state.isPanMode || e.button !== 0) return;
+      
+      e.preventDefault();
+      isDragging = true;
+      
+      lastMousePos = {
+        x: e.clientX,
+        y: e.clientY
+      };
+      
+      initialTranslate = {
+        x: this._state.zoomState?.translateX || 0,
+        y: this._state.zoomState?.translateY || 0
+      };
+      
+      if (this._state.svgElement) {
+        this._state.svgElement.style.transition = 'none';
+      }
+    });
+    
+    window.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      
+      e.preventDefault();
+      
+      const deltaX = e.clientX - lastMousePos.x;
+      const deltaY = e.clientY - lastMousePos.y;
+      
+      const newTranslateX = initialTranslate.x + deltaX;
+      const newTranslateY = initialTranslate.y + deltaY;
+      
+      this._applyZoomInstant(this._state.zoomState?.scale || 1, newTranslateX, newTranslateY);
+    });
+    
+    window.addEventListener('mouseup', (e) => {
+      if (!isDragging) return;
+      
+      isDragging = false;
+      
+      if (this._state.svgElement) {
+        this._state.svgElement.style.transition = 'transform 0.3s ease';
+      }
+    });
+  },
+
   _applyZoom(scale, translateX, translateY) {
     if (!this._state.svgElement || !this._state.zoomState) return;
     

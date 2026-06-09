@@ -131,7 +131,7 @@
         <!-- Mapa Interactivo -->
         <div class="card mb-md">
           <div class="card__body" style="padding: 0; position: relative;">
-            <!-- Controles de Zoom -->
+            <!-- Controles de Zoom y Modos -->
             <div id="zoom-controls" class="zoom-controls" style="position: absolute; top: 10px; right: 10px; z-index: 10; display: none; flex-direction: column; gap: 4px;">
               <button type="button" id="btn-zoom-in" class="btn btn--secondary" style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center;" title="Acercar">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -156,8 +156,25 @@
                   <path d="M1 12h6m6 0h6"></path>
                 </svg>
               </button>
+              
+              <!-- Separador visual -->
+              <div style="height: 1px; background: var(--border-color); margin: 2px 0;"></div>
+              
+              <button type="button" id="btn-mode-select" class="btn btn--secondary active" style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center;" title="Modo Selección (Puntero)">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path>
+                  <path d="M13 13l6 6"></path>
+                </svg>
+              </button>
+              <button type="button" id="btn-mode-pan" class="btn btn--secondary" style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center;" title="Modo Arrastre (Mano)">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v5"></path>
+                  <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v6"></path>
+                  <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v4.5"></path>
+                  <path d="M6 10V8a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v9a7 7 0 0 0 7 7h3a5 5 0 0 0 5-5v-5"></path>
+                </svg>
+              </button>
             </div>
-            
             <div id="mapa-container" class="mapa-container" style="width: 100%; height: 65vh; min-height: 380px; border-radius: var(--radius-md); background: var(--bg-elevated); display: flex; align-items: center; justify-content: center; color: var(--text-muted); overflow: hidden;">
               <div class="mapa-placeholder text-center">
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="margin-bottom: var(--space-sm);">
