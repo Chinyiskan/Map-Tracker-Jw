@@ -52,13 +52,6 @@ export const MapasManager = {
     svgElement: null,
     // Nuevo: estado en tiempo real de territorios
     territoryRealTimeStatus: new Map(), // ID -> 'pendiente'|'trabajada'
-    // Clean Architecture: Información de ciclos y progreso
-    cicloActivo: null, // Información del ciclo activo del barrio
-    progresoBarrio: null, // Progreso detallado del barrio
-    // Legacy: Información de ciclos (mantener para compatibilidad)
-    currentCycle: 1,
-    cycleStartDate: null,
-    cycleHistory: new Map(), // barrio -> {cycleNumber, completedDate, territories}
     // Modo consulta
     isConsultaMode: false
   },
@@ -495,12 +488,6 @@ export const MapasManager = {
       // Cargar reportes del barrio
       this._state.reportes = await this._loadBarrioReportes(barrio);
       
-      // Cargar ciclo activo
-      this._state.cicloActivo = await this._loadCicloActivo(barrio);
-      
-      // Cargar progreso del barrio
-      this._state.progresoBarrio = await this._loadProgresoBarrio(barrio);
-      
       // Aplicar estilos basados en los datos cargados y el modo
       if (this._state.isConsultaMode) {
         this._initConsultaFilters();
@@ -661,54 +648,6 @@ export const MapasManager = {
   },
   
   /**
-   * Cargar información del ciclo activo del barrio
-   * @param {string} barrio - Nombre del barrio
-   * @returns {Object|null} Información del ciclo activo
-   * @private
-   */
-  async _loadCicloActivo(barrio) {
-    try {
-      const response = await fetch(`${API_BASE}/ciclos/barrio/${encodeURIComponent(barrio)}/activo`);
-      const result = await response.json();
-      
-      if (!result.success) {
-        // No hay ciclo activo, esto es normal
-        console.log(`ℹ️ No hay ciclo activo para ${barrio}`);
-        return null;
-      }
-      
-      console.log(`🔄 Ciclo activo para ${barrio}:`, result.data);
-      return result.data;
-      
-    } catch (error) {
-      console.error('❌ Error al cargar ciclo activo:', error);
-      return null;
-    }
-  },
-  
-  /**
-   * Cargar progreso del barrio
-   * @param {string} barrio - Nombre del barrio
-   * @returns {Object|null} Información del progreso
-   * @private
-   */
-  async _loadProgresoBarrio(barrio) {
-    try {
-      const response = await fetch(`${API_BASE}/ciclos/barrio/${encodeURIComponent(barrio)}/progreso`);
-      const result = await response.json();
-      
-      if (!result.success) {
-        console.log(`ℹ️ No hay progreso disponible para ${barrio}`);
-        return null;
-      }
-      
-      console.log(`📈 Progreso para ${barrio}:`, result.data);
-      return result.data;
-      
-    } catch (error) {
-      console.error('❌ Error al cargar progreso del barrio:', error);
-      return null;
-    }
   },
   
   /**
@@ -834,173 +773,6 @@ export const MapasManager = {
     
     // Aplicar estilos después del análisis
     this._applyBasicRealTimeStyles();
-    
-    // SPRINT 2: Detectar ciclo completo
-    this._detectCompleteCycle(barrio);
-  },
-
-  /**
-   * SPRINT 2 - Task 2.1: Detectar si todas las manzanas han sido trabajadas
-   * @private
-   */
-  _detectCompleteCycle(barrio) {
-    const totalTerritories = this._state.territories.length;
-    const trabajadas = Array.from(this._state.territoryRealTimeStatus.values())
-      .filter(status => status === 'trabajada').length;
-    
-    const isComplete = trabajadas === totalTerritories;
-    const progress = Math.round((trabajadas / totalTerritories) * 100);
-    
-    if (isComplete) {
-      this._handleCycleComplete(barrio);
-    }
-    
-    return {
-      isComplete,
-      progress,
-      trabajadas,
-      total: totalTerritories
-    };
-  },
-
-  /**
-   * SPRINT 2 - Task 2.2: Manejar ciclo completo y reinicio
-   * @private
-   */
-  _handleCycleComplete(barrio) {
-    // Incrementar ciclo actual directamente
-    this._state.currentCycle = this._state.currentCycle + 1;
-    
-    const cycleInfo = {
-      barrio,
-      completedDate: new Date().toISOString(),
-      cycleNumber: this._state.currentCycle,
-      territories: this._state.territories.length
-    };
-    
-    // Guardar en localStorage
-    this._saveCycleInfo(cycleInfo);
-    
-    // Reiniciar estados
-    this._resetTerritoryStatus();
-    
-    // Actualizar fecha de inicio
-    this._state.cycleStartDate = new Date().toISOString();
-    
-    // Notificar al usuario
-    UI.showNotification(
-      `🎉 ¡Ciclo completo en ${barrio}! Iniciando nuevo seguimiento.`,
-      'success'
-    );
-    
-    // Ciclo completado
-    
-    // SPRINT 3: Actualizar progreso después del reinicio
-    setTimeout(() => {
-      this._showBarrioProgress();
-    }, 100);
-  },
-
-  /**
-   * SPRINT 2 - Task 2.3: Obtener número de ciclo actual
-   * @private
-   */
-  _getCurrentCycleNumber(barrio) {
-    const cycleData = this._loadCycleInfo(barrio);
-    return cycleData ? cycleData.cycleNumber : 0;
-  },
-
-  /**
-   * SPRINT 2 - Task 2.4: Guardar información de ciclo en localStorage
-   * @private
-   */
-  _saveCycleInfo(cycleInfo) {
-    try {
-      const key = `cycle_${cycleInfo.barrio}`;
-      JSONUtils.setToStorage(key, cycleInfo);
-      
-      // Guardar también en historial
-      this._state.cycleHistory.set(cycleInfo.barrio, cycleInfo);
-      
-      console.log('💾 Información de ciclo guardada:', cycleInfo);
-    } catch (error) {
-      console.error('❌ Error al guardar información de ciclo:', error);
-    }
-  },
-
-  /**
-   * SPRINT 2 - Task 2.5: Cargar información de ciclo desde localStorage
-   * @private
-   */
-  _loadCycleInfo(barrio) {
-    try {
-      const key = `cycle_${barrio}`;
-      return JSONUtils.getFromStorage(key, null);
-    } catch (error) {
-      console.error('❌ Error al cargar información de ciclo:', error);
-      return null;
-    }
-  },
-
-  /**
-   * SPRINT 2 - Task 2.6: Reiniciar estados de territorio
-   * @private
-   */
-  _resetTerritoryStatus() {
-    // Limpiar estados en tiempo real
-    this._state.territoryRealTimeStatus.clear();
-    
-    // Re-analizar con estados limpios
-    this._state.territories.forEach(territory => {
-      this._state.territoryRealTimeStatus.set(territory.id, 'pendiente');
-    });
-    
-    // Aplicar estilos actualizados
-    this._applyBasicRealTimeStyles();
-    
-    console.log('🔄 Estados de territorio reiniciados');
-  },
-
-  /**
-   * SPRINT 2 - Task 2.7: Inicializar información de ciclos al cargar barrio
-   * @private
-   */
-  _initializeCycleInfo(barrio) {
-    try {
-      // Cargar información de ciclo existente
-      const cycleData = this._loadCycleInfo(barrio);
-      
-      if (cycleData && cycleData.cycleNumber) {
-        // CORREGIDO: Usar cycleStartDate, no completedDate
-        this._state.currentCycle = cycleData.cycleNumber;
-        this._state.cycleStartDate = cycleData.cycleStartDate || new Date().toISOString();
-        this._state.cycleHistory.set(barrio, cycleData);
-        
-        console.log(`📊 Ciclo ${cycleData.cycleNumber} cargado para ${barrio}`);
-        console.log(`📅 Fecha inicio ciclo: ${this._state.cycleStartDate}`);
-      } else {
-        // Primer ciclo para este barrio
-        this._state.currentCycle = 1;
-        this._state.cycleStartDate = new Date().toISOString();
-        
-        // Guardar el primer ciclo
-        const initialCycleInfo = {
-          barrio,
-          cycleNumber: 1,
-          cycleStartDate: this._state.cycleStartDate,
-          territories: this._state.territories.length
-        };
-        this._saveCycleInfo(initialCycleInfo);
-        
-        console.log(`🆕 Iniciando primer ciclo para ${barrio}`);
-        console.log(`📅 Fecha inicio ciclo: ${this._state.cycleStartDate}`);
-      }
-    } catch (error) {
-      console.error('❌ Error al inicializar información de ciclos:', error);
-      // Valores por defecto en caso de error
-      this._state.currentCycle = 1;
-      this._state.cycleStartDate = new Date().toISOString();
-    }
   },
 
   /**
@@ -1029,65 +801,7 @@ export const MapasManager = {
   },
 
   /**
-   * SPRINT 3 - Task 3.2: Mostrar progreso del barrio
-   * @private
-   */
-  _showBarrioProgress() {
-    // Calcular estadísticas basadas en el estado actual
-    const stats = this._calculateTerritoryStats();
-    const trabajadas = stats.trabajadas || 0;
-    const total = this._state.territories.length;
-    const progress = total > 0 ? Math.round((trabajadas / total) * 100) : 0;
-    const isComplete = progress === 100;
-    
-    const progressHTML = `
-      <div class="barrio-progress mb-sm" style="
-        background: var(--bg-surface);
-        padding: var(--space-sm);
-        border-radius: var(--radius-sm);
-        border: 1px solid var(--border-color);
-      ">
-        <div class="flex justify-between items-center mb-xs">
-          <span class="text-sm font-semibold">${this._state.currentBarrio}</span>
-          <span class="text-xs text-muted">${trabajadas}/${total} (${progress}%)</span>
-        </div>
-        <div class="progress-bar" style="
-          width: 100%;
-          height: 6px;
-          background: var(--border-color);
-          border-radius: 3px;
-          overflow: hidden;
-        ">
-          <div style="
-            width: ${progress}%;
-            height: 100%;
-            background: var(--success);
-            transition: width 0.3s ease;
-          "></div>
-        </div>
-        <div class="text-xs text-muted mt-xs">
-          Ciclo ${this._state.currentCycle} • ${isComplete ? '🎉 ¡Completado!' : 'En progreso'}
-        </div>
-      </div>
-    `;
-    
-    // Insertar antes de la leyenda
-    const leyenda = document.querySelector('.flex.justify-center.gap-md.mb-sm');
-    if (leyenda) {
-      // Remover progreso anterior si existe
-      const existingProgress = document.querySelector('.barrio-progress');
-      if (existingProgress) {
-        existingProgress.remove();
-      }
-      
-      leyenda.insertAdjacentHTML('beforebegin', progressHTML);
-    }
-    
-    // Progreso actualizado silenciosamente
-  },
-  
-  /**
-   * Mostrar progreso del barrio usando Clean Architecture
+   * Mostrar información básica del barrio en pantalla usando Clean Architecture
    * @private
    */
   _showBarrioProgressCleanArchitecture() {
@@ -1095,37 +809,11 @@ export const MapasManager = {
     if (!progressContainer) return;
     
     const barrio = this._state.currentBarrio;
-    const cicloActivo = this._state.cicloActivo;
     const reportes = this._state.reportes;
     
-    // Calcular estadísticas básicas
-    const stats = this._calculateTerritoryStats();
-    const trabajadas = stats.trabajadas || 0;
-    const total = this._state.territories.length;
-    const progress = total > 0 ? Math.round((trabajadas / total) * 100) : 0;
-    
-    // Progreso logging
-    console.log(`📊 Progreso ${barrio}:`, {
-      trabajadas,
-      total,
-      progress,
-      territoryRealTimeStatus: this._state.territoryRealTimeStatus.size
-    });
-    
-    // Información del ciclo
-    let cicloNumero = 1;
-    let estadoCiclo = 'activo';
-    
-    if (cicloActivo) {
-      cicloNumero = cicloActivo.numero_ciclo || 1;
-      estadoCiclo = cicloActivo.estado || 'activo';
-    }
-    
-    const isComplete = progress === 100;
-    
-    // Obtener fecha del último reporte para modo consulta
+    // Obtener fecha del último reporte
     let ultimoReporteInfo = '';
-    if (this._state.isConsultaMode && reportes && reportes.length > 0) {
+    if (reportes && reportes.length > 0) {
       // Encontrar el reporte más reciente
       const ultimoReporte = reportes.reduce((latest, current) => {
         const currentDate = new Date(current.fecha);
@@ -1144,10 +832,8 @@ export const MapasManager = {
       }
     }
     
-    // Usar variables del design system para mantener consistencia visual
     const backgroundColor = 'var(--bg-secondary)';
     const borderColor = 'var(--border-color)';
-    const progressColor = isComplete ? 'var(--success)' : 'var(--info)';
     
     const progressHTML = `
       <div class="barrio-progress" style="
@@ -1157,29 +843,8 @@ export const MapasManager = {
         border: 1px solid ${borderColor};
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
       ">
-        <div class="flex justify-between items-center mb-xs">
+        <div class="flex justify-between items-center">
           <span class="text-sm font-semibold text-primary">${barrio}</span>
-          <span class="text-xs text-muted">${trabajadas}/${total} (${progress}%)</span>
-        </div>
-        <div class="progress-bar" style="
-          width: 100%;
-          height: 6px;
-          background: var(--bg-surface);
-          border-radius: 3px;
-          overflow: hidden;
-        ">
-          <div class="progress-fill" style="
-            width: ${progress}%;
-            height: 100%;
-            background: ${progressColor};
-            transition: width 0.3s ease;
-          "></div>
-        </div>
-        <div class="flex justify-between items-center mt-xs">
-          <span class="text-xs text-muted">Ciclo ${cicloNumero}</span>
-          <span class="text-xs ${isComplete ? 'text-success' : 'text-muted'}">
-            ${isComplete ? '🎉 ¡Completado!' : 'En progreso'}
-          </span>
         </div>
         ${ultimoReporteInfo}
       </div>

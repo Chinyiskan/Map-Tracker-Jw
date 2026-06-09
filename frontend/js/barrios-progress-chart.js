@@ -724,7 +724,7 @@ export class BarriosProgressChart {
                 <circle cx="12" cy="12" r="10"></circle>
                 <polyline points="12,6 12,12 16,14"></polyline>
               </svg>
-              Ciclo ${ciclo} • ${this.getEstadoLabel(estado)}
+              ${this.getEstadoLabel(estado)}
             </div>
             <div class="barrio-progress-bar__territories">
               ${completados}/${total} territorios

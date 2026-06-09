@@ -1,5 +1,5 @@
 // backend/routes/ciclos.js
-// Rutas de Express para ciclos de progreso y barrios usando SheetDB
+// Rutas de Express para progreso de barrios en base a actividad reciente de 30 días
 
 import express from 'express';
 import { getRows, normalizeDateStr } from '../config/db.js';
@@ -33,12 +33,12 @@ async function getManzanasMap() {
 }
 
 /**
- * GET /api/barrios
+ * GET /api/ciclos/barrios
  * Obtener lista de barrios únicos ordenados alfabéticamente
  */
 router.get('/barrios', async (req, res) => {
   try {
-    console.log('📋 GET /api/barrios');
+    console.log('📋 GET /api/ciclos/barrios');
     const manzanasRef = await getRows('manzanas_barrio_referencia');
     const validManzanas = manzanasRef.filter(m => m.es_valida === 'true' || m.es_valida === true || m.es_valida === undefined);
     
@@ -49,7 +49,7 @@ router.get('/barrios', async (req, res) => {
       data: barriosUnicos
     });
   } catch (error) {
-    console.error('❌ Error en GET /api/barrios:', error);
+    console.error('❌ Error en GET /api/ciclos/barrios:', error);
     res.status(500).json({
       success: false,
       error: 'Error al obtener barrios',
@@ -60,16 +60,15 @@ router.get('/barrios', async (req, res) => {
 
 /**
  * GET /api/ciclos/progreso
- * Obtener el progreso general de todos los barrios
+ * Obtener el progreso general de todos los barrios basado en actividad de los últimos 30 días
  */
 router.get('/progreso', async (req, res) => {
   try {
-    console.log('📋 GET /api/ciclos/progreso');
+    console.log('📋 GET /api/ciclos/progreso (dinámico 30 días)');
     
-    // Cargar todas las tablas relevantes en paralelo
-    const [manzanasRef, ciclos, reportesRaw] = await Promise.all([
+    // Cargar manzanas de referencia y reportes (no necesitamos ciclos)
+    const [manzanasRef, reportesRaw] = await Promise.all([
       getRows('manzanas_barrio_referencia'),
-      getRows('ciclos'),
       getRows('reportes')
     ]);
 
@@ -82,7 +81,7 @@ router.get('/progreso', async (req, res) => {
       }
     });
 
-    // Mapear reportes con barrio
+    // Mapear reportes con barrio y normalizar fecha
     const reportes = reportesRaw.map(r => ({
       ...r,
       fecha: normalizeDateStr(r.Fecha || r.fecha),
@@ -94,26 +93,22 @@ router.get('/progreso', async (req, res) => {
     const validManzanas = manzanasRef.filter(m => m.es_valida === 'true' || m.es_valida === true || m.es_valida === undefined);
     const barriosUnicos = [...new Set(validManzanas.map(m => m.barrio || m.Barrio))].filter(Boolean);
 
-    const ciclosActivos = ciclos.filter(c => c.estado === 'activo');
+    // Calcular fecha límite para considerar trabajo reciente (últimos 30 días)
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - 30);
+    const cutoffStr = cutoffDate.toISOString().split('T')[0];
 
     const progresoBarrios = barriosUnicos.map(barrio => {
-      const cicloActivo = ciclosActivos.find(c => (c.barrio || c.Barrio || '').toLowerCase() === barrio.toLowerCase());
       const manzanasDelBarrio = validManzanas.filter(m => (m.barrio || m.Barrio).toLowerCase() === barrio.toLowerCase());
+      const totalTerritorios = manzanasDelBarrio.length;
       
-      const totalTerritorios = cicloActivo ? parseInt(cicloActivo.total_territorios || cicloActivo.Total_territorios) : manzanasDelBarrio.length;
-      
-      // Filtrar reportes de este barrio que correspondan al ciclo activo (fecha >= fecha_inicio)
+      // Filtrar reportes de este barrio que correspondan a los últimos 30 días
       const reportesDelBarrio = reportes.filter(r => r.barrio && r.barrio.toLowerCase() === barrio.toLowerCase());
-      
-      let reportesCiclo = reportesDelBarrio;
-      if (cicloActivo && (cicloActivo.fecha_inicio || cicloActivo.Fecha_inicio)) {
-        const fechaInicio = cicloActivo.fecha_inicio || cicloActivo.Fecha_inicio;
-        reportesCiclo = reportesDelBarrio.filter(r => r.fecha >= fechaInicio);
-      }
+      const reportesRecientes = reportesDelBarrio.filter(r => r.fecha >= cutoffStr);
 
-      // Calcular manzanas únicas trabajadas en este ciclo
+      // Calcular manzanas únicas trabajadas recientemente
       const manzanasTrabajadas = new Set();
-      reportesCiclo.forEach(r => {
+      reportesRecientes.forEach(r => {
         if (r.manzanas) {
           r.manzanas.split(',').forEach(m => {
             const trimmed = m.trim().toLowerCase();
@@ -122,24 +117,23 @@ router.get('/progreso', async (req, res) => {
         }
       });
 
-      const territoriosCompletados = cicloActivo ? parseInt(cicloActivo.territorios_completados || cicloActivo.Territorios_completados || 0) : manzanasTrabajadas.size;
+      const territoriosCompletados = manzanasTrabajadas.size;
+      const progresoPorcentaje = totalTerritorios > 0 ? Math.round((territoriosCompletados / totalTerritorios) * 100) : 0;
       
       const reportesCompletados = reportesDelBarrio.filter(r => r.estado === 'finalizado' || r.estado === 'completado').length;
       const reportesPendientes = reportesDelBarrio.length - reportesCompletados;
       
-      const progresoPorcentaje = totalTerritorios > 0 ? Math.round((territoriosCompletados / totalTerritorios) * 100) : 0;
-      
       return {
         barrio: barrio,
-        numero_ciclo: cicloActivo ? parseInt(cicloActivo.numero_ciclo || cicloActivo.Numero_ciclo) : 1,
-        fecha_inicio: cicloActivo ? (cicloActivo.fecha_inicio || cicloActivo.Fecha_inicio) : new Date().toISOString().split('T')[0],
+        numero_ciclo: 1, // Por defecto siempre ciclo 1
+        fecha_inicio: cutoffStr,
         total_territorios: totalTerritorios,
         territorios_completados: territoriosCompletados,
         progreso_porcentaje: progresoPorcentaje,
         reportes_completados: reportesCompletados,
         reportes_pendientes: reportesPendientes,
         total_reportes: reportesDelBarrio.length,
-        estado: cicloActivo ? (cicloActivo.estado || cicloActivo.Estado) : 'sin_ciclo'
+        estado: 'activo'
       };
     });
 
@@ -147,7 +141,7 @@ router.get('/progreso', async (req, res) => {
       success: true,
       data: progresoBarrios,
       total: progresoBarrios.length,
-      metodo: 'in_memory_sheetdb'
+      metodo: 'dinamico_30_dias_sheetdb'
     });
   } catch (error) {
     console.error('❌ Error en GET /api/ciclos/progreso:', error);
@@ -161,65 +155,29 @@ router.get('/progreso', async (req, res) => {
 
 /**
  * GET /api/ciclos/barrio/:barrio/activo
- * Obtener el ciclo activo de un barrio
+ * Mock: Retorna null ya que el sistema de ciclos fue desactivado
  */
 router.get('/barrio/:barrio/activo', async (req, res) => {
-  try {
-    const { barrio } = req.params;
-    console.log(`🔍 GET /api/ciclos/barrio/${barrio}/activo`);
-
-    const ciclos = await getRows('ciclos');
-    const cicloActivo = ciclos.find(c => 
-      (c.barrio || c.Barrio || '').toLowerCase() === barrio.toLowerCase() && 
-      (c.estado || c.Estado || '').toLowerCase() === 'activo'
-    );
-
-    if (cicloActivo) {
-      // Normalizar claves para el frontend
-      const normalized = {
-        id: cicloActivo.id || cicloActivo.ID,
-        barrio: cicloActivo.barrio || cicloActivo.Barrio,
-        numero_ciclo: parseInt(cicloActivo.numero_ciclo || cicloActivo.Numero_ciclo || 1),
-        estado: cicloActivo.estado || cicloActivo.Estado,
-        fecha_inicio: cicloActivo.fecha_inicio || cicloActivo.Fecha_inicio,
-        total_territorios: parseInt(cicloActivo.total_territorios || cicloActivo.Total_territorios || 0),
-        territorios_completados: parseInt(cicloActivo.territorios_completados || cicloActivo.Territorios_completados || 0),
-        progreso_porcentaje: parseFloat(cicloActivo.progreso_porcentaje || cicloActivo.Progreso_porcentaje || 0)
-      };
-
-      res.json({
-        success: true,
-        data: normalized
-      });
-    } else {
-      res.json({
-        success: false,
-        data: null,
-        message: 'No hay ciclo activo para este barrio'
-      });
-    }
-  } catch (error) {
-    console.error('❌ Error en GET /api/ciclos/barrio/:barrio/activo:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Error al obtener el ciclo activo',
-      message: error.message
-    });
-  }
+  console.log(`🔍 GET /api/ciclos/barrio/${req.params.barrio}/activo (Mock - Ciclos Desactivados)`);
+  res.json({
+    success: true,
+    data: null,
+    message: 'El sistema de ciclos está desactivado en esta versión'
+  });
 });
 
 /**
  * GET /api/ciclos/barrio/:barrio/progreso
- * Obtener el progreso detallado de un barrio específico
+ * Obtener el progreso detallado de un barrio específico basado en la actividad de los últimos 30 días
  */
 router.get('/barrio/:barrio/progreso', async (req, res) => {
   try {
     const { barrio } = req.params;
-    console.log(`📈 GET /api/ciclos/barrio/${barrio}/progreso`);
+    console.log(`📈 GET /api/ciclos/barrio/${barrio}/progreso (dinámico 30 días)`);
 
-    const [reportesRaw, ciclos] = await Promise.all([
+    const [reportesRaw, manzanasRef] = await Promise.all([
       getRows('reportes'),
-      getRows('ciclos')
+      getRows('manzanas_barrio_referencia')
     ]);
 
     const manzanasMap = await getManzanasMap();
@@ -233,29 +191,30 @@ router.get('/barrio/:barrio/progreso', async (req, res) => {
       barrio: getBarrioFromReporte(r, manzanasMap)
     })).filter(r => r.barrio && r.barrio.toLowerCase() === barrio.toLowerCase());
 
-    const cicloActivo = ciclos.find(c => 
-      (c.barrio || c.Barrio || '').toLowerCase() === barrio.toLowerCase() && 
-      (c.estado || c.Estado || '').toLowerCase() === 'activo'
-    );
+    const validManzanas = manzanasRef.filter(m => (m.barrio || m.Barrio || '').toLowerCase() === barrio.toLowerCase() && (m.es_valida === 'true' || m.es_valida === true || m.es_valida === undefined));
+    const totalTerritorios = validManzanas.length;
 
-    const totalReportes = reportes.length;
-    const reportesCompletados = reportes.filter(r => r.estado === 'finalizado' || r.estado === 'completado').length;
-    const reportesPendientes = totalReportes - reportesCompletados;
+    // Calcular fecha límite (últimos 30 días)
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - 30);
+    const cutoffStr = cutoffDate.toISOString().split('T')[0];
 
-    let progresoPorcentaje = 0;
-    if (totalReportes > 0) {
-      progresoPorcentaje = Math.round((reportesCompletados / totalReportes) * 100);
-    }
-
-    const territoriosUnicos = new Set();
-    reportes.forEach(r => {
+    const reportesRecientes = reportes.filter(r => r.fecha >= cutoffStr);
+    const manzanasTrabajadas = new Set();
+    reportesRecientes.forEach(r => {
       if (r.manzanas) {
         r.manzanas.split(',').forEach(m => {
           const trimmed = m.trim().toLowerCase();
-          if (trimmed) territoriosUnicos.add(trimmed);
+          if (trimmed) manzanasTrabajadas.add(trimmed);
         });
       }
     });
+
+    const territoriosCompletados = manzanasTrabajadas.size;
+    const progresoPorcentaje = totalTerritorios > 0 ? Math.round((territoriosCompletados / totalTerritorios) * 100) : 0;
+
+    const reportesCompletados = reportes.filter(r => r.estado === 'finalizado' || r.estado === 'completado').length;
+    const reportesPendientes = reportes.length - reportesCompletados;
 
     res.json({
       success: true,
@@ -264,15 +223,10 @@ router.get('/barrio/:barrio/progreso', async (req, res) => {
         progreso_porcentaje: progresoPorcentaje,
         reportes_completados: reportesCompletados,
         reportes_pendientes: reportesPendientes,
-        total_reportes: totalReportes,
-        total_territorios: territoriosUnicos.size,
-        ciclo_activo: cicloActivo ? {
-          id: cicloActivo.id || cicloActivo.ID,
-          numero_ciclo: parseInt(cicloActivo.numero_ciclo || cicloActivo.Numero_ciclo || 1),
-          fecha_inicio: cicloActivo.fecha_inicio || cicloActivo.Fecha_inicio,
-          estado: cicloActivo.estado || cicloActivo.Estado
-        } : null,
-        estado: progresoPorcentaje === 100 ? 'completado' : 'en_progreso',
+        total_reportes: reportes.length,
+        total_territorios: totalTerritorios,
+        ciclo_activo: null, // Desactivado
+        estado: 'activo',
         ultima_actualizacion: new Date().toISOString()
       }
     });
