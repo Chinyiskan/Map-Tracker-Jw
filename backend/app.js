@@ -15,9 +15,6 @@ import { validateEnvironment } from './config/env-validator.js';
 // Importar rutas modulares
 import authRoutes from './routes/auth.js';
 import reportesRoutes from './routes/reportes.js';
-import salidasRoutes from './routes/salidas.js';
-import capitanesRoutes from './routes/capitanes.js';
-import ciclosRoutes from './routes/ciclos.js';
 
 // Configurar __dirname para ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -79,16 +76,12 @@ app.use((req, res, next) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/reportes', reportesRoutes);
-app.use('/api/salidas', salidasRoutes);
-app.use('/api/capitanes', capitanesRoutes);
-app.use('/api/ciclos', ciclosRoutes);
 
 // Endpoint adicional para compatibilidad con lista de barrios
 app.get('/api/barrios', async (req, res) => {
   try {
-    const manzanasRef = await getRows('manzanas_barrio_referencia');
-    const validManzanas = manzanasRef.filter(m => m.es_valida === 'true' || m.es_valida === true || m.es_valida === undefined);
-    const barriosUnicos = [...new Set(validManzanas.map(m => m.barrio || m.Barrio))].filter(Boolean).sort();
+    const reportes = await getRows('reportes');
+    const barriosUnicos = [...new Set(reportes.map(r => r.Barrio || r.barrio))].filter(Boolean).sort();
     res.json({ success: true, data: barriosUnicos });
   } catch (error) {
     res.json({ success: true, data: [] });
@@ -113,10 +106,10 @@ app.get('/api/health', async (req, res) => {
     res.json({
       status: dbStatus ? 'OK' : 'ERROR',
       timestamp: new Date().toISOString(),
-      database: dbStatus ? 'Connected (SheetDB)' : 'Disconnected',
+      database: dbStatus ? 'Connected (Google Apps Script)' : 'Disconnected',
       environment: process.env.NODE_ENV || 'development',
       version: '2.2.0',
-      architecture: 'Lightweight Modular / SheetDB'
+      architecture: 'Lightweight Modular / Google Apps Script Direct'
     });
   } catch (error) {
     res.status(500).json({
@@ -174,9 +167,9 @@ export async function initializeApp() {
     validateEnvironment();
     const dbConnected = await testConnection();
     if (!dbConnected) {
-      console.warn('⚠️ Advertencia: No se pudo conectar a la API de SheetDB.');
+      console.warn('⚠️ Advertencia: No se pudo conectar a la API de Google Apps Script.');
     } else {
-      console.log('✅ Conexión con SheetDB exitosa');
+      console.log('✅ Conexión con Google Apps Script exitosa');
     }
     return true;
   } catch (error) {

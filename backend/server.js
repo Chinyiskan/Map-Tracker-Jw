@@ -57,14 +57,11 @@ async function startServer() {
       
       console.log('\n📋 APIs Disponibles:');
       console.log(`   📊 Reportes: http://${HOST}:${PORT}/api/reportes`);
-      console.log(`   🚪 Salidas: http://${HOST}:${PORT}/api/salidas`);
-      console.log(`   👥 Capitanes: http://${HOST}:${PORT}/api/capitanes`);
-      console.log(`   🔄 Ciclos: http://${HOST}:${PORT}/api/ciclos`);
       console.log(`   🔐 Auth: http://${HOST}:${PORT}/api/auth`);
       
       console.log('\n🚀 Optimizaciones activas:');
       console.log('   ✅ Compresión Gzip habilitada');
-      console.log('   ✅ Conectores SheetDB optimizados');
+      console.log('   ✅ Conexión directa a Google Apps Script activa');
       console.log('\n✅ Servidor listo para recibir solicitudes\n');
     });
     

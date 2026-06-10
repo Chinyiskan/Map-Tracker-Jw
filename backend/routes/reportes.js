@@ -6,45 +6,41 @@ import { getRows, addRow, updateRow, deleteRow, normalizeDateStr } from '../conf
 
 const router = express.Router();
 
-// Helper para mapear fila de SheetDB a objeto de reporte esperado por el frontend
-async function mapRowToReporte(row, manzanasMap) {
-  const manzanasStr = row.Manzanas || row.manzanas || '';
-  const firstManzana = manzanasStr.split(',')[0]?.trim().toLowerCase();
+/**
+ * Mapea el estado guardado en el Excel a los estados estándares esperados por el frontend:
+ * "iniciado", "en_progreso", "finalizado"
+ * @param {string} estado - Estado en crudo desde la hoja
+ * @returns {string} Estado normalizado
+ */
+function mapEstadoToFrontend(estado) {
+  if (!estado) return 'iniciado';
+  const val = String(estado).trim().toLowerCase();
   
-  // Buscar barrio correspondiente a partir de la manzana
-  let barrio = row.barrio || row.Barrio || '';
-  if (!barrio && firstManzana && manzanasMap) {
-    barrio = manzanasMap.get(firstManzana) || '';
+  if (val.includes('0') || val.includes('iniciando') || val.includes('iniciado')) {
+    return 'iniciado';
   }
+  if (val.includes('1') || val.includes('progreso') || val.includes('trabajando') || val.includes('asignado')) {
+    return 'en_progreso';
+  }
+  if (val.includes('2') || val.includes('finalizado') || val.includes('completado') || val.includes('finalizando')) {
+    return 'finalizado';
+  }
+  
+  return 'iniciado'; // fallback
+}
 
+// Helper para mapear fila de Sheets a objeto de reporte esperado por el frontend
+async function mapRowToReporte(row) {
   return {
     id: row.ID || row.id,
     fecha: normalizeDateStr(row.Fecha || row.fecha),
-    manzanas: manzanasStr,
-    estado: row.Estado || row.estado,
+    manzanas: row.Manzanas || row.manzanas || '',
+    estado: mapEstadoToFrontend(row.Estado || row.estado),
     nombre_capitan: row['Nombre del capitán'] || row.nombre_capitan || row.capitan || '',
     observaciones: row.Observaciones || row.observaciones || '',
-    barrio: barrio,
+    barrio: row.Barrio || row.barrio || '',
     created_at: row.created_at || row.Created_at || new Date().toISOString()
   };
-}
-
-// Helper para construir el mapa de manzanas a barrios
-async function getManzanasMap() {
-  const map = new Map();
-  try {
-    const manzanasRef = await getRows('manzanas_barrio_referencia');
-    manzanasRef.forEach(row => {
-      const manzana = row.manzana || row.Manzana;
-      const barrio = row.barrio || row.Barrio;
-      if (manzana && barrio) {
-        map.set(manzana.trim().toLowerCase(), barrio.trim());
-      }
-    });
-  } catch (error) {
-    console.error('⚠️ Error al cargar mapa de manzanas de referencia:', error.message);
-  }
-  return map;
 }
 
 /**
@@ -57,11 +53,10 @@ router.get('/', async (req, res) => {
     console.log(`📋 GET /api/reportes - Filtros: barrio=${barrio}, inicio=${fecha_inicio || start_date}, fin=${fecha_fin || end_date}`);
 
     const reportesRaw = await getRows('reportes');
-    const manzanasMap = await getManzanasMap();
     
     // Mapear cada fila al formato esperado
     const reportes = await Promise.all(
-      reportesRaw.map(row => mapRowToReporte(row, manzanasMap))
+      reportesRaw.map(row => mapRowToReporte(row))
     );
 
     // Filtrar por barrio y fecha
@@ -109,10 +104,9 @@ router.get('/barrio/:barrio', async (req, res) => {
     console.log(`🔍 GET /api/reportes/barrio/${barrio}`);
 
     const reportesRaw = await getRows('reportes');
-    const manzanasMap = await getManzanasMap();
     
     const reportes = await Promise.all(
-      reportesRaw.map(row => mapRowToReporte(row, manzanasMap))
+      reportesRaw.map(row => mapRowToReporte(row))
     );
 
     const filtered = reportes.filter(r => 
@@ -156,8 +150,7 @@ router.get('/:id', async (req, res) => {
       });
     }
 
-    const manzanasMap = await getManzanasMap();
-    const reporte = await mapRowToReporte(row, manzanasMap);
+    const reporte = await mapRowToReporte(row);
 
     res.json({
       success: true,

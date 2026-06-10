@@ -1,7 +1,7 @@
 // backend/config/db.js
-// Cliente modular de SheetDB para Google Sheets
+// Cliente modular directo para Google Sheets usando Google Apps Script
 
-const SHEETDB_URL = 'https://sheetdb.io/api/v1/yh8g3sq2sswqv';
+const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxKT7dRZExcPf3jFNn2CQQv37dM1Q7UnD8_rnaFI3IcuHZRCuA2DUwFSQrJVaqFtep-/exec';
 
 // Cache en memoria para almacenar las filas de las hojas
 const dbCache = new Map();
@@ -61,47 +61,36 @@ export function normalizeDateStr(dateVal) {
 }
 
 /**
- * Realiza una petición genérica a la API de SheetDB
- * @param {string} path - Ruta o parámetros de consulta
- * @param {Object} options - Opciones de fetch (method, body, headers)
- * @returns {Promise<any>} Datos devueltos por la API
- */
-async function apiRequest(path, options = {}) {
-  const url = `${SHEETDB_URL}${path}`;
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      ...options.headers,
-    },
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text().catch(() => 'No response body');
-    throw new Error(`SheetDB Error [${response.status}]: ${errorText}`);
-  }
-
-  return response.json();
-}
-
-/**
- * Obtener todos los registros de una hoja específica
- * @param {string} sheetName - Nombre de la hoja de cálculo
+ * Obtener todos los registros de la hoja de reportes
+ * @param {string} sheetName - Nombre de la hoja de cálculo (debe ser 'reportes')
  * @returns {Promise<Array>} Registros de la hoja
  */
 export async function getRows(sheetName) {
+  if (sheetName !== 'reportes') {
+    console.warn(`⚠️ Intento de acceder a hoja no soportada: "${sheetName}"`);
+    return [];
+  }
+
   const now = Date.now();
   const cached = dbCache.get(sheetName);
   
   if (cached && (now - cached.timestamp < CACHE_TTL)) {
     console.log(`⚡ Servido desde caché para la hoja "${sheetName}"`);
-    return JSON.parse(JSON.stringify(cached.data)); // Retornar copia para evitar mutaciones
+    return JSON.parse(JSON.stringify(cached.data));
   }
 
   try {
-    const data = await apiRequest(`?sheet=${encodeURIComponent(sheetName)}`);
-    const rows = Array.isArray(data) ? data : [];
+    const response = await fetch(GOOGLE_APPS_SCRIPT_URL);
+    if (!response.ok) {
+      throw new Error(`Google Apps Script Error [${response.status}]`);
+    }
+
+    const json = await response.json();
+    if (json.status !== 'success') {
+      throw new Error(json.message || 'Error en respuesta de Google Apps Script');
+    }
+
+    const rows = Array.isArray(json.data) ? json.data : [];
     
     // Guardar en caché
     dbCache.set(sheetName, {
@@ -117,19 +106,69 @@ export async function getRows(sheetName) {
 }
 
 /**
- * Insertar un nuevo registro en una hoja específica
- * @param {string} sheetName - Nombre de la hoja de cálculo
+ * Mapea el estado del reporte al formato exacto requerido por la validación de la hoja de cálculo:
+ * "0: Iniciando", "1: Trabajando", "2: Finalizado"
+ * @param {string} estado - Estado del reporte recibido
+ * @returns {string} Estado mapeado
+ */
+function mapEstadoToSheet(estado) {
+  if (!estado) return '0: Iniciando';
+  const val = String(estado).trim().toLowerCase();
+  
+  if (val.includes('0') || val.includes('iniciando') || val.includes('iniciado')) {
+    return '0: Iniciando';
+  }
+  if (val.includes('1') || val.includes('progreso') || val.includes('trabajando') || val.includes('asignado')) {
+    return '1: Trabajando';
+  }
+  if (val.includes('2') || val.includes('finalizado') || val.includes('completado') || val.includes('finalizando')) {
+    return '2: Finalizado';
+  }
+  
+  return '0: Iniciando'; // fallback seguro
+}
+
+/**
+ * Insertar un nuevo registro en la hoja de reportes
+ * @param {string} sheetName - Nombre de la hoja de cálculo (debe ser 'reportes')
  * @param {Object} rowData - Datos a insertar
  * @returns {Promise<any>} Resultado de la inserción
  */
 export async function addRow(sheetName, rowData) {
+  if (sheetName !== 'reportes') {
+    throw new Error(`Operación addRow no soportada para la hoja: "${sheetName}"`);
+  }
+
   try {
-    const result = await apiRequest(`?sheet=${encodeURIComponent(sheetName)}`, {
+    const payload = {
+      ID: rowData.ID || rowData.id || '',
+      Fecha: rowData.Fecha || rowData.fecha || '',
+      Manzanas: rowData.Manzanas || rowData.manzanas || '',
+      Barrio: rowData.Barrio || rowData.barrio || '',
+      Estado: mapEstadoToSheet(rowData.Estado || rowData.estado),
+      nombreCapitan: rowData['Nombre del capitán'] || rowData.nombre_capitan || rowData.nombreCapitan || '',
+      Observaciones: rowData.Observaciones || rowData.observaciones || ''
+    };
+
+    const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
       method: 'POST',
-      body: JSON.stringify({ data: [rowData] }),
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8'
+      },
+      body: JSON.stringify(payload)
     });
+
+    if (!response.ok) {
+      throw new Error(`Google Apps Script POST Error [${response.status}]`);
+    }
+
+    const json = await response.json();
+    if (json.status !== 'success') {
+      throw new Error(json.message || 'Error en respuesta de Google Apps Script POST');
+    }
+
     invalidateCache(sheetName);
-    return result;
+    return json;
   } catch (error) {
     console.error(`❌ Error en addRow para la hoja "${sheetName}":`, error.message);
     throw error;
@@ -137,59 +176,33 @@ export async function addRow(sheetName, rowData) {
 }
 
 /**
- * Actualizar registros que coincidan con un criterio
- * @param {string} sheetName - Nombre de la hoja de cálculo
- * @param {string} columnName - Columna filtro (ej. 'id' o 'ID')
- * @param {string|number} columnValue - Valor de la columna filtro
- * @param {Object} updateData - Datos a actualizar
- * @returns {Promise<any>} Resultado de la actualización
+ * Actualizar registros (No implementado en Apps Script, deshabilitado)
  */
 export async function updateRow(sheetName, columnName, columnValue, updateData) {
-  try {
-    const result = await apiRequest(`/${encodeURIComponent(columnName)}/${encodeURIComponent(columnValue)}?sheet=${encodeURIComponent(sheetName)}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ data: updateData }),
-    });
-    invalidateCache(sheetName);
-    return result;
-  } catch (error) {
-    console.error(`❌ Error en updateRow para la hoja "${sheetName}":`, error.message);
-    throw error;
-  }
+  console.warn(`⚠️ updateRow deshabilitado para la hoja "${sheetName}"`);
+  return { success: false, message: 'Operación no soportada' };
 }
 
 /**
- * Eliminar registros que coincidan con un criterio
- * @param {string} sheetName - Nombre de la hoja de cálculo
- * @param {string} columnName - Columna filtro (ej. 'id' o 'ID')
- * @param {string|number} columnValue - Valor de la columna filtro
- * @returns {Promise<any>} Resultado de la eliminación
+ * Eliminar registros (No implementado en Apps Script, deshabilitado)
  */
 export async function deleteRow(sheetName, columnName, columnValue) {
-  try {
-    const result = await apiRequest(`/${encodeURIComponent(columnName)}/${encodeURIComponent(columnValue)}?sheet=${encodeURIComponent(sheetName)}`, {
-      method: 'DELETE',
-    });
-    invalidateCache(sheetName);
-    return result;
-  } catch (error) {
-    console.error(`❌ Error en deleteRow para la hoja "${sheetName}":`, error.message);
-    throw error;
-  }
+  console.warn(`⚠️ deleteRow deshabilitado para la hoja "${sheetName}"`);
+  return { success: false, message: 'Operación no soportada' };
 }
 
 /**
- * Probar conexión con SheetDB obteniendo las hojas
+ * Probar conexión con Google Apps Script
  * @returns {Promise<boolean>} True si la conexión es exitosa
  */
 export async function testConnection() {
   try {
-    const response = await fetch(`${SHEETDB_URL}/sheets`);
+    const response = await fetch(GOOGLE_APPS_SCRIPT_URL);
     if (!response.ok) return false;
-    const data = await response.json();
-    return Array.isArray(data) || (data && typeof data === 'object');
+    const json = await response.json();
+    return json.status === 'success';
   } catch (error) {
-    console.error('❌ Error de prueba de conexión con SheetDB:', error.message);
+    console.error('❌ Error de prueba de conexión con Google Apps Script:', error.message);
     return false;
   }
 }
