@@ -10,7 +10,7 @@
 </head>
 <body>
   <div class="container flex items-center justify-center" style="min-height: 100vh; padding: var(--space-lg);">
-    <div class="card" style="width: 100%; max-width: 700px;">
+    <div id="consulta-card" class="card" style="width: 100%; max-width: 700px; transition: max-width var(--transition-normal);">
 
       <div class="card__header text-center">
         <div class="flex justify-center mb-md">
@@ -21,23 +21,85 @@
             </svg>
           </div>
         </div>
-        <h2 class="text-xl font-semibold text-primary mb-xs">Consultar Territorios</h2>
-        <p class="text-sm text-secondary">Elige el barrio que deseas consultar para revisar el estado actual de los mapas</p>
+        <h2 id="consulta-title" class="text-xl font-semibold text-primary mb-xs">Consultar Territorios</h2>
+        <p id="consulta-subtitle" class="text-sm text-secondary">Elige el barrio que deseas consultar para revisar el estado actual de los mapas</p>
       </div>
       
       <div class="card__body">
-        <div id="barrios-grid-consultar" class="barrios-container">
-          <!-- Se puebla dinámicamente en main.js -->
+        <!-- VISTA DE BARRIOS -->
+        <div id="vista-barrios">
+          <div id="barrios-grid-consultar" class="barrios-container">
+            <!-- Se puebla dinámicamente en main.js -->
+          </div>
+          
+          <div class="flex flex-col gap-md mt-lg" style="max-width: 300px; margin: 0 auto;">
+            <button type="button" id="btn-ver-registro" class="btn btn--primary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" stroke-width="2"/>
+                <polyline points="14,2 14,8 20,8" stroke="currentColor" stroke-width="2"/>
+              </svg>
+              Ver Registro Completo
+            </button>
+            <button type="button" id="btn-volver-home" class="btn btn--secondary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z" stroke="currentColor" stroke-width="2"/>
+                <polyline points="9,22 9,12 15,12 15,22" stroke="currentColor" stroke-width="2"/>
+              </svg>
+              Volver
+            </button>
+          </div>
         </div>
-        
-        <div class="flex gap-md mt-lg" style="max-width: 200px; margin: 0 auto;">
-          <button type="button" id="btn-volver-home" class="btn btn--secondary flex-1">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z" stroke="currentColor" stroke-width="2"/>
-              <polyline points="9,22 9,12 15,12 15,22" stroke="currentColor" stroke-width="2"/>
-            </svg>
-            Volver
-          </button>
+
+        <!-- VISTA DE REGISTRO COMPLETO (Oculta por defecto) -->
+        <div id="vista-registro" class="hidden">
+          <!-- Controles de búsqueda y filtros -->
+          <div class="flex flex-col md:flex-row gap-md mb-lg">
+            <div class="form-group flex-1 mb-0">
+              <label for="buscar-registro" class="form-label">Buscar</label>
+              <input type="text" id="buscar-registro" class="form-input" placeholder="Buscar por capitán u observaciones...">
+            </div>
+            <div class="form-group flex-1 mb-0">
+              <label for="filtro-barrio-registro" class="form-label">Filtrar por Barrio</label>
+              <select id="filtro-barrio-registro" class="form-input form-select">
+                <option value="">Todos los barrios</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Tabla de reportes -->
+          <div class="reportes-table-container bg-surface rounded-lg border border-color mb-lg" style="margin-top: 1rem;">
+            <div class="table-wrapper">
+              <table id="tabla-registro" class="reportes-table">
+                <thead class="bg-elevated table-header-sticky">
+                  <tr>
+                    <th class="table-cell table-cell--header">Fecha</th>
+                    <th class="table-cell table-cell--header">Barrio</th>
+                    <th class="table-cell table-cell--header">Manzanas</th>
+                    <th class="table-cell table-cell--header">Capitán</th>
+                    <th class="table-cell table-cell--header">Estado</th>
+                    <th class="table-cell table-cell--header table-cell--mobile-hidden">Observaciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tabla-registro-body">
+                  <!-- Se puebla dinámicamente -->
+                </tbody>
+              </table>
+            </div>
+            <div class="table-footer">
+              <div class="table-info">
+                <span id="registro-info" class="text-sm text-secondary">Cargando registros...</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-center mt-lg">
+            <button type="button" id="btn-regresar-barrios" class="btn btn--secondary" style="width: 100%; max-width: 200px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M19 12H5M12 19L5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Volver a barrios
+            </button>
+          </div>
         </div>
       </div>
     </div>

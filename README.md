@@ -80,7 +80,7 @@
 ### Prerrequisitos
 
 - **Node.js** >= 16.0.0
-- **npm** >= 7.0.0
+- **pnpm** >= 8.0.0
 - Cuenta en **Supabase** (gratuita)
 
 ### 1. Clonar el Repositorio
@@ -93,7 +93,7 @@ cd Map-Tracker-Jw
 ### 2. Instalar Dependencias
 
 ```bash
-npm install
+pnpm install
 ```
 
 ### 3. Configurar Variables de Entorno
@@ -129,13 +129,13 @@ Ejecuta el script SQL incluido en tu proyecto Supabase:
 
 ```bash
 # Desarrollo con auto-reload
-npm run dev:watch
+pnpm run dev:watch
 
 # Producción
-npm start
+pnpm start
 
 # Auto-detectar puerto disponible
-npm run dev:auto
+pnpm run dev:auto
 ```
 
 🎉 **¡Listo!** Abre http://localhost:3002 en tu navegador
@@ -147,35 +147,35 @@ npm run dev:auto
 ### 🔧 Desarrollo
 
 ```bash
-npm run dev:watch          # Desarrollo con auto-reload
-npm run dev:auto           # Auto-detectar puerto disponible
-npm run start:3000         # Iniciar en puerto específico
-npm run start:port 3005    # Puerto personalizado
+pnpm run dev:watch          # Desarrollo con auto-reload
+pnpm run dev:auto           # Auto-detectar puerto disponible
+pnpm run start:3000         # Iniciar en puerto específico
+pnpm run start:port 3005    # Puerto personalizado
 ```
 
 ### 🧪 Testing
 
 ```bash
-npm test                   # Ejecutar todas las pruebas
-npm run test:watch         # Pruebas en modo watch
-npm run test:coverage      # Cobertura de código
-npm run test:unit          # Solo pruebas unitarias
-npm run test:integration   # Solo pruebas de integración
+pnpm test                   # Ejecutar todas las pruebas
+pnpm run test:watch         # Pruebas en modo watch
+pnpm run test:coverage      # Cobertura de código
+pnpm run test:unit          # Solo pruebas unitarias
+pnpm run test:integration   # Solo pruebas de integración
 ```
 
 ### 🔍 Calidad de Código
 
 ```bash
-npm run lint               # Verificar código
-npm run lint:fix           # Corregir automáticamente
-npm run typecheck          # Verificar tipos TypeScript
-npm run audit              # Auditoría de seguridad
+pnpm run lint               # Verificar código
+pnpm run lint:fix           # Corregir automáticamente
+pnpm run typecheck          # Verificar tipos TypeScript
+pnpm run audit              # Auditoría de seguridad
 ```
 
 ### 🗄️ Base de Datos
 
 ```bash
-npm run test-db            # Probar conexión a BD
+pnpm run test-db            # Probar conexión a BD
 ```
 
 ---
@@ -286,13 +286,13 @@ El proyecto incluye una suite completa de pruebas:
 
 ```bash
 # Ejecutar todas las pruebas
-npm test
+pnpm test
 
 # Ver cobertura
-npm run test:coverage
+pnpm run test:coverage
 
 # Modo watch para desarrollo
-npm run test:watch
+pnpm run test:watch
 ```
 
 ---
@@ -352,10 +352,10 @@ NODE_ENV=production
 
 ```bash
 # Build para producción
-npm run build
+pnpm run build
 
 # Iniciar en modo producción
-NODE_ENV=production npm start
+NODE_ENV=production pnpm start
 ```
 
 ---

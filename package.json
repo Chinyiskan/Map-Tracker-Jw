@@ -10,8 +10,8 @@
     "test-db": "node -e \"import('./backend/config/db.js').then(m => m.testConnection())\"",
     "lint": "eslint backend/",
     "lint:fix": "eslint backend/ --fix",
-    "audit": "npm audit",
-    "audit-fix": "npm audit fix"
+    "audit": "pnpm audit",
+    "audit-fix": "pnpm audit"
   },
   "dependencies": {
     "compression": "^1.8.1",
