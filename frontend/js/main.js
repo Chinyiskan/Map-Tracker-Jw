@@ -52,10 +52,15 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.className = 'btn-barrio';
       btn.textContent = barrio.nombre;
       btn.addEventListener('click', () => {
+        // Marcar como seleccionado visualmente antes de navegar
+        gridInformar.querySelectorAll('.btn-barrio').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
         // Guardar barrio en caché para compatibilidad legacy si es necesario
         JSONUtils.setToStorage('barrio', barrio);
-        // Ir a mapa en modo reporte
-        window.location.href = `mapa.html?modo=reporte&barrio=${encodeURIComponent(barrio.nombre)}`;
+        // Navegar con pequeño delay para que el usuario vea la selección
+        setTimeout(() => {
+          window.location.href = `mapa.html?modo=reporte&barrio=${encodeURIComponent(barrio.nombre)}`;
+        }, 150);
       });
       gridInformar.appendChild(btn);
     });
@@ -70,8 +75,13 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.className = 'btn-barrio';
       btn.textContent = barrio.nombre;
       btn.addEventListener('click', () => {
-        // Ir a mapa en modo consulta
-        window.location.href = `mapa.html?modo=consulta&barrio=${encodeURIComponent(barrio.nombre)}`;
+        // Marcar como seleccionado visualmente antes de navegar
+        gridConsultar.querySelectorAll('.btn-barrio').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        // Navegar con pequeño delay para que el usuario vea la selección
+        setTimeout(() => {
+          window.location.href = `mapa.html?modo=consulta&barrio=${encodeURIComponent(barrio.nombre)}`;
+        }, 150);
       });
       gridConsultar.appendChild(btn);
     });
@@ -218,6 +228,29 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 });
+
+// --- BREADCRUMB en mapa.html ---
+// Poblado automáticamente desde los query params ?modo= y ?barrio=
+(function initBreadcrumb() {
+  const breadcrumb = document.getElementById('mapa-breadcrumb');
+  if (!breadcrumb) return;
+
+  const params = new URLSearchParams(window.location.search);
+  const modo   = params.get('modo') || 'consulta';
+  const barrio = params.get('barrio') || 'Barrio';
+
+  const esReporte = modo === 'reporte';
+  const paso2Label = esReporte ? 'Reportar' : 'Consultar';
+  const paso2Href  = esReporte ? 'reportes.html' : 'consulta.html';
+
+  breadcrumb.innerHTML = `
+    <a href="index.html" class="breadcrumb__item">Inicio</a>
+    <span class="breadcrumb__sep" aria-hidden="true">›</span>
+    <a href="${paso2Href}" class="breadcrumb__item">${paso2Label}</a>
+    <span class="breadcrumb__sep" aria-hidden="true">›</span>
+    <span class="breadcrumb__current" aria-current="page">${decodeURIComponent(barrio)}</span>
+  `;
+})();
 
 // --- FUNCIONES PARA LA VISTA DE REGISTRO COMPLETO ---
 let allReports = [];

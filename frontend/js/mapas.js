@@ -388,7 +388,24 @@ export const MapasManager = {
     
     // Renderizar tabla
     if (filteredReportes.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted" style="padding: var(--space-md);">No hay reportes en el rango seleccionado.</td></tr>`;
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="5">
+            <div class="empty-state empty-state--table-row">
+              <div class="empty-state__icon">
+                <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/>
+                  <line x1="8" y1="2" x2="8" y2="6"/>
+                  <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+              </div>
+              <p class="empty-state__title">Sin reportes en este rango</p>
+              <p class="empty-state__desc">Intenta ajustar el filtro de fechas para ver los reportes de este territorio.</p>
+            </div>
+          </td>
+        </tr>
+      `;
     } else {
       tbody.innerHTML = filteredReportes.map(reporte => {
         const manzanas = reporte.manzanas || '';

@@ -977,12 +977,15 @@ export const AdminManager = {
     if (reportes.length === 0) {
       tableBody.innerHTML = `
         <tr>
-          <td colspan="6" class="table-cell" style="text-align: center; padding: var(--space-xl); color: var(--text-secondary);">
-            <div style="display: flex; flex-direction: column; align-items: center; gap: var(--space-md);">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M9 12H15M9 16H15M17 21H7C5.89543 21 5 20.1046 5 19V5C5 3.89543 5.89543 3 7 3H12.5858C12.851 3 13.1054 3.10536 13.2929 3.29289L19.7071 9.70711C19.8946 9.89464 20 10.149 20 10.4142V19C20 20.1046 19.1046 21 18 21H17Z"/>
-              </svg>
-              <span>No hay reportes para mostrar</span>
+          <td colspan="6">
+            <div class="empty-state empty-state--table-row">
+              <div class="empty-state__icon">
+                <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+                  <path d="M9 12H15M9 16H15M17 21H7C5.89543 21 5 20.1046 5 19V5C5 3.89543 5.89543 3 7 3H12.5858C12.851 3 13.1054 3.10536 13.2929 3.29289L19.7071 9.70711C19.8946 9.89464 20 10.149 20 10.4142V19C20 20.1046 19.1046 21 18 21H17Z"/>
+                </svg>
+              </div>
+              <p class="empty-state__title">Sin reportes para mostrar</p>
+              <p class="empty-state__desc">Los reportes enviados por los capitanes aparecerán aquí. Ajusta los filtros o espera nuevos envíos.</p>
             </div>
           </td>
         </tr>

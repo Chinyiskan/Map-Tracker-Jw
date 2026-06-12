@@ -16,9 +16,14 @@
   <div class="container" style="padding: var(--space-md); max-width: 100%;">
 
     <!-- Header -->
-    <div class="text-center mb-md">
+    <div class="text-center mb-xs">
       <h2 id="titulo-barrio" class="text-xl font-semibold text-primary mb-xs">Mapa Territorial</h2>
     </div>
+
+    <!-- Breadcrumb de navegación -->
+    <nav id="mapa-breadcrumb" class="breadcrumb justify-center mb-md" aria-label="Ruta de navegación">
+      <!-- Poblado dinámicamente por JS según ?modo= y ?barrio= -->
+    </nav>
 
     <!-- Leyenda y Grilla del Mapa -->
     <div class="mapa-layout-grid">
@@ -182,6 +187,16 @@
               <small class="text-xs text-secondary mt-xs" style="display: block; opacity: 0.85; margin-top: 4px;">Nota: Puedes especificar el tipo de actividad, si hubo lluvia o detalles especiales de la predicación.</small>
             </div>
           </form>
+
+          <!-- Botón enviar dentro del panel — principio de proximidad -->
+          <div class="mt-lg">
+            <button type="button" id="btn-enviar-reporte" class="btn btn--primary w-100" style="width: 100%;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              Enviar Reporte
+            </button>
+          </div>
         </div>
       </div>
 
@@ -230,19 +245,13 @@
     <!-- Botones de Navegación del Pie de Página -->
     <div class="flex gap-sm justify-center mt-md" style="max-width: 500px; margin: var(--space-md) auto 0 auto;">
       
-      <!-- Contenedor Botones Modo Reporte -->
+      <!-- Contenedor Botones Modo Reporte — solo Volver (Enviar está en el panel del formulario) -->
       <div id="btn-group-reporte" class="flex gap-sm w-100" style="display: none; width: 100%;">
         <button type="button" id="btn-volver-reporte" class="btn btn--secondary flex-1" onclick="window.location.href='reportes.html'">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M19 12H5M12 19l-7-7 7-7"/>
           </svg>
           Volver
-        </button>
-        <button type="button" id="btn-enviar-reporte" class="btn btn--primary flex-1">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="20 6 9 17 4 12"/>
-          </svg>
-          Enviar Reporte
         </button>
       </div>
 

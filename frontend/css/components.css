@@ -1943,6 +1943,117 @@
   vertical-align: middle;
 }
 
+/* ===================================================================
+   BREADCRUMB — Ruta de navegación
+   =================================================================== */
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.breadcrumb a,
+.breadcrumb__item {
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.breadcrumb a:hover {
+  color: var(--accent-light);
+}
+
+.breadcrumb__sep {
+  color: var(--border-light);
+  user-select: none;
+  font-size: var(--font-size-xs);
+}
+
+.breadcrumb__current {
+  color: var(--accent-light);
+  font-weight: var(--font-weight-medium);
+}
+
+/* ===================================================================
+   EMPTY STATES — Tablas y listas sin contenido
+   =================================================================== */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-3xl) var(--space-xl);
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.empty-state__icon {
+  opacity: 0.25;
+  margin-bottom: var(--space-lg);
+  color: var(--text-secondary);
+}
+
+.empty-state__title {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  margin: 0 0 var(--space-xs) 0;
+}
+
+.empty-state__desc {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin: 0;
+  max-width: 280px;
+  line-height: var(--line-height-relaxed);
+}
+
+/* Versión compacta para tablas (como fila de <td>) */
+.empty-state--table-row {
+  padding: var(--space-xl);
+}
+
+.empty-state--table-row .empty-state__icon {
+  margin-bottom: var(--space-md);
+}
+
+/* ===================================================================
+   BOTONES DE BARRIO — Estado seleccionado
+   =================================================================== */
+.btn-barrio {
+  position: relative; /* necesario para el badge de selección */
+}
+
+.btn-barrio.selected {
+  border-color: var(--accent-primary) !important;
+  background: rgba(79, 70, 229, 0.1) !important;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2), var(--shadow-md);
+  color: var(--accent-light) !important;
+}
+
+/* Checkmark badge en la esquina superior derecha */
+.btn-barrio.selected::after {
+  content: '✓';
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  width: 20px;
+  height: 20px;
+  background: var(--accent-primary);
+  color: white;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 20px;
+  text-align: center;
+}
 
 /* === PRINT STYLES === */
 @media print {

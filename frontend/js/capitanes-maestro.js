@@ -57,13 +57,15 @@ function mostrarCapitanesMaestro(capitanes) {
   
   if (!capitanes || capitanes.length === 0) {
     container.innerHTML = `
-      <div class="text-center py-xl text-secondary">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" class="mx-auto mb-md opacity-50">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-          <circle cx="12" cy="7" r="4"/>
-        </svg>
-        <p>No hay capitanes registrados</p>
-        <p class="text-xs">Agrega el primer capitán usando el formulario de arriba</p>
+      <div class="empty-state">
+        <div class="empty-state__icon">
+          <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+        </div>
+        <p class="empty-state__title">No hay capitánes registrados</p>
+        <p class="empty-state__desc">Agrega el primer capitán usando el formulario de arriba.</p>
       </div>
     `;
     return;
