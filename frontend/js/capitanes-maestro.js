@@ -1,5 +1,7 @@
 // Gestión de Capitanes Maestros - Tabla capitanes
 
+import { UI } from './ui.js';
+
 // Variables globales
 let capitanesMaestro = [];
 let capitanEditando = null;
@@ -150,6 +152,7 @@ function continuarTarjetaCapitanMaestro(capitan) {
 // Guardar capitán maestro
 async function guardarCapitanMaestro(e) {
   e.preventDefault();
+  const submitBtn = e.target.querySelector('button[type="submit"]');
   
   const nombre = document.getElementById('maestro-nombre').value.trim();
   const apellido = document.getElementById('maestro-apellido').value.trim();
@@ -168,6 +171,9 @@ async function guardarCapitanMaestro(e) {
   };
   
   try {
+    // Activar loader en el botón
+    UI.setButtonLoading(submitBtn, true, 'Guardando...');
+    
     let response;
     
     if (capitanEditando) {
@@ -210,6 +216,9 @@ async function guardarCapitanMaestro(e) {
   } catch (error) {
     console.error('Error:', error);
     mostrarNotificacion('Error de conexión', 'error');
+  } finally {
+    // Desactivar loader en el botón
+    UI.setButtonLoading(submitBtn, false);
   }
 }
 

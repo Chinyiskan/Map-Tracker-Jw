@@ -595,6 +595,68 @@ export const UI = {
     const config = { ...defaults, ...options };
     
     return new Intl.NumberFormat(config.locale, config).format(num);
+  },
+  
+  /**
+   * Pone un botón en estado de carga con un spinner y previene doble envío
+   * @param {HTMLButtonElement} button El botón a modificar
+   * @param {boolean} isLoading Si debe estar en carga o no
+   * @param {string} loadingText Texto a mostrar durante la carga (opcional)
+   */
+  setButtonLoading(button, isLoading, loadingText = 'Procesando...') {
+    if (!button) return;
+
+    if (isLoading) {
+      if (button.getAttribute('data-loading') === 'true') {
+        return;
+      }
+      button.setAttribute('data-loading', 'true');
+      
+      // Guardar el contenido original
+      button.setAttribute('data-original-html', button.innerHTML);
+      
+      button.classList.add('btn--loading');
+      
+      // Insertar spinner y texto
+      button.innerHTML = `
+        <svg class="btn-spinner" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle; margin-right: 8px;">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" style="opacity: 0.25;"/>
+          <path d="M12 2A10 10 0 0 0 2 12" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <animateTransform attributeName="transform" type="rotate" values="0 12 12;360 12 12" dur="0.8s" repeatCount="indefinite"/>
+          </path>
+        </svg>
+        <span>${loadingText}</span>
+      `;
+      
+      button.style.cursor = 'wait';
+      
+      // Agregar event listener temporal para cuando el usuario intente hacer click de nuevo
+      if (!button._doubleClickWarning) {
+        button._doubleClickWarning = (e) => {
+          if (button.getAttribute('data-loading') === 'true') {
+            e.preventDefault();
+            e.stopPropagation();
+            this.showNotification('Su petición ya se está procesando. Por favor, espere...', 'warning');
+          }
+        };
+        // Registrar en fase de captura para interceptar antes de otros manejadores
+        button.addEventListener('click', button._doubleClickWarning, true);
+      }
+    } else {
+      button.removeAttribute('data-loading');
+      const originalHtml = button.getAttribute('data-original-html');
+      if (originalHtml) {
+        button.innerHTML = originalHtml;
+        button.removeAttribute('data-original-html');
+      }
+      button.classList.remove('btn--loading');
+      button.style.cursor = '';
+      
+      if (button._doubleClickWarning) {
+        button.removeEventListener('click', button._doubleClickWarning, true);
+        delete button._doubleClickWarning;
+      }
+    }
   }
 };
 

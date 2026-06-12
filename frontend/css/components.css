@@ -1855,6 +1855,18 @@
 .mapa-container.mode-pan svg .manzana-touch-area {
   cursor: inherit !important;
 }
+/* === ESTADOS DE CARGA DE BOTÓN === */
+.btn--loading {
+  opacity: 0.8 !important;
+  pointer-events: auto !important; /* Permitir clicks para mostrar advertencia */
+  cursor: wait !important;
+}
+
+.btn-spinner {
+  animation: spin 0.8s linear infinite;
+  display: inline-block;
+  vertical-align: middle;
+}
 
 
 /* === PRINT STYLES === */

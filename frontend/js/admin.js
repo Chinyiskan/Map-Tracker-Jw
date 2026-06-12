@@ -455,6 +455,7 @@ export const AdminManager = {
    */
   async handleSalidaSubmit(event) {
     event.preventDefault();
+    const submitBtn = event.target.querySelector('button[type="submit"]');
     
     try {
       const formData = new FormData(event.target);
@@ -480,6 +481,9 @@ export const AdminManager = {
       // Determinar si es creación o actualización
       const isEdit = salidaData.id && salidaData.id !== '';
       
+      // Activar loader en el botón
+      UI.setButtonLoading(submitBtn, true, isEdit ? 'Guardando...' : 'Programando...');
+
       let response;
       if (isEdit) {
         response = await fetch(`${API_BASE}/salidas/${salidaData.id}`, {
@@ -514,6 +518,9 @@ export const AdminManager = {
     } catch (error) {
       console.error('❌ Error al guardar salida:', error);
       UI.showNotification('Error al guardar salida', 'error');
+    } finally {
+      // Desactivar loader en el botón
+      UI.setButtonLoading(submitBtn, false);
     }
   },
   

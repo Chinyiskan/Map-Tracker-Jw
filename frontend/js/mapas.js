@@ -1895,6 +1895,7 @@ export const MapasManager = {
    * Función para crear reportes desde el mapa
    */
   async sendReporteToBackend() {
+    const enviarReporteBtn = document.getElementById('btn-enviar-reporte');
     try {
       console.log('🚀 INICIANDO sendReporteToBackend');
       
@@ -1925,6 +1926,9 @@ export const MapasManager = {
         UI.showNotification('Por favor, complete todos los campos del formulario', 'warning');
         return false;
       }
+      
+      // Activar loader en el botón para prevenir doble click
+      UI.setButtonLoading(enviarReporteBtn, true, 'Enviando Reporte...');
       
       // Preparar lista de manzanas seleccionadas
       const manzanasSeleccionadas = this._state.selectedTerritories.map(territory => {
@@ -1987,6 +1991,9 @@ export const MapasManager = {
       console.error('❌ Error al enviar reporte:', error);
       UI.showNotification('Error al enviar reporte: ' + error.message, 'error');
       return false;
+    } finally {
+      // Restaurar estado del botón
+      UI.setButtonLoading(enviarReporteBtn, false);
     }
   },
   

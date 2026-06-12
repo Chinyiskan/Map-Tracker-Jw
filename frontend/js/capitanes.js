@@ -396,6 +396,7 @@ async function cargarCapitanesDropdown() {
 
 async function guardarCapitan(e) {
   e.preventDefault();
+  const submitBtn = e.target.querySelector('button[type="submit"]');
   
   // Obtener datos del formulario
   const capitanId = document.getElementById('salida-capitan').value;
@@ -421,6 +422,9 @@ async function guardarCapitan(e) {
   };
   
   try {
+    // Activar loader en el botón
+    UI.setButtonLoading(submitBtn, true, capitanEditando ? 'Guardando...' : 'Programando...');
+    
     let response;
     
     if (capitanEditando) {
@@ -463,6 +467,9 @@ async function guardarCapitan(e) {
   } catch (error) {
     console.error('Error:', error);
     UI.showNotification('Error de conexión', 'error');
+  } finally {
+    // Desactivar loader en el botón
+    UI.setButtonLoading(submitBtn, false);
   }
 }
 
