@@ -7,13 +7,118 @@
     <link rel="stylesheet" href="css/design-system.css" />
     <link rel="stylesheet" href="css/components.css" />
     <link rel="stylesheet" href="css/styles.css" />
+    <style>
+      /* === ANIMACIONES DE ENTRADA === */
+      @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(16px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+
+      .home-header {
+        animation: fadeInUp 0.4s ease both;
+      }
+      .home-actions {
+        animation: fadeInUp 0.4s ease 0.1s both;
+      }
+      .home-footer {
+        animation: fadeInUp 0.4s ease 0.2s both;
+      }
+
+      /* === BOTÓN INFORMAR — CTA primario === */
+      #btn-informar {
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%) !important;
+        border: 1px solid rgba(139, 92, 246, 0.4) !important;
+        box-shadow: 0 4px 24px rgba(79, 70, 229, 0.35),
+                    0 1px 0 rgba(255,255,255,0.06) inset !important;
+        position: relative;
+        overflow: hidden;
+      }
+
+      /* Efecto shimmer sutil en el CTA */
+      #btn-informar::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(105deg,
+          transparent 30%,
+          rgba(255,255,255,0.07) 50%,
+          transparent 70%
+        );
+        transform: translateX(-100%);
+        transition: transform 0.6s ease;
+        pointer-events: none;
+      }
+      #btn-informar:hover::before {
+        transform: translateX(100%);
+      }
+
+      #btn-informar:hover {
+        transform: translateY(-3px) !important;
+        box-shadow: 0 8px 32px rgba(79, 70, 229, 0.5),
+                    0 1px 0 rgba(255,255,255,0.08) inset !important;
+        border-color: rgba(139, 92, 246, 0.6) !important;
+      }
+
+      /* Texto e ícono del CTA en blanco */
+      #btn-informar h3,
+      #btn-informar p {
+        color: rgba(255, 255, 255, 0.95) !important;
+      }
+      #btn-informar p {
+        opacity: 0.8;
+      }
+
+      /* Badge "Principal" sobre el botón CTA */
+      .home-badge {
+        position: absolute;
+        top: var(--space-sm);
+        right: var(--space-sm);
+        background: rgba(255,255,255,0.15);
+        border: 1px solid rgba(255,255,255,0.2);
+        color: rgba(255,255,255,0.9);
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 2px 8px;
+        border-radius: var(--radius-full);
+        backdrop-filter: blur(4px);
+      }
+
+      /* Ícono del CTA — fondo más claro sobre el gradiente */
+      #btn-informar .icon-wrap {
+        background: rgba(255,255,255,0.15) !important;
+        border: 1px solid rgba(255,255,255,0.2);
+        backdrop-filter: blur(4px);
+      }
+
+      /* === BOTÓN CONSULTAR — secundario === */
+      #btn-consultar {
+        background: var(--bg-secondary) !important;
+        border: 1px solid var(--border-color) !important;
+        box-shadow: none !important;
+      }
+
+      #btn-consultar:hover {
+        transform: translateY(-2px) !important;
+        border-color: var(--accent-primary) !important;
+        box-shadow: 0 4px 16px rgba(79, 70, 229, 0.15) !important;
+      }
+
+      /* Ícono del secundario */
+      #btn-consultar .icon-wrap {
+        background: var(--bg-surface) !important;
+        border: 1px solid var(--border-color);
+      }
+    </style>
   </head>
   <body>
     <div class="container">
 
       <main class="flex flex-col items-center justify-center" style="min-height: 100vh; padding: var(--space-lg) 0;">
+
         <!-- Header con logo -->
-        <header class="text-center mb-xl">
+        <header class="home-header text-center mb-xl">
           <div class="flex justify-center mb-lg">
             <div class="bg-accent p-lg rounded-xl shadow-lg">
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -28,40 +133,52 @@
         </header>
         
         <!-- Botones principales -->
-        <div class="grid grid--1 gap-lg" style="max-width: 400px; width: 100%;">
-          <button id="btn-informar" class="card transition-normal" style="padding: var(--space-xl); text-align: left; border: none; cursor: pointer; background: var(--bg-secondary);">
+        <div class="home-actions grid grid--1 gap-lg" style="max-width: 400px; width: 100%;">
+
+          <!-- CTA Primario: Informar -->
+          <button id="btn-informar" class="transition-normal" style="padding: var(--space-xl); text-align: left; border: none; cursor: pointer; border-radius: var(--radius-xl); position: relative;">
+            <span class="home-badge">Acción principal</span>
             <div class="flex items-center gap-lg">
-              <div class="bg-accent p-md rounded-lg flex items-center justify-center" style="min-width: 56px; height: 56px;">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <div class="icon-wrap p-md rounded-lg flex items-center justify-center" style="min-width: 56px; height: 56px;">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="white" stroke-width="2" stroke-linejoin="round"/>
                   <path d="M2 17L12 22L22 17" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+                  <path d="M2 12L12 17L22 12" stroke="white" stroke-width="2" stroke-linejoin="round"/>
                 </svg>
               </div>
               <div class="flex-1">
-                <h3 class="text-lg font-semibold text-primary mb-xs">Informar</h3>
-                <p class="text-sm text-secondary">Registra un nuevo reporte territorial</p>
+                <h3 class="text-lg font-bold mb-xs" style="margin-top: var(--space-sm);">Informar</h3>
+                <p class="text-sm">Registra un nuevo reporte territorial</p>
               </div>
+              <!-- Flecha indicadora -->
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="opacity: 0.7; flex-shrink: 0;">
+                <path d="M9 18l6-6-6-6" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
             </div>
           </button>
           
-          <button id="btn-consultar" class="card transition-normal" style="padding: var(--space-xl); text-align: left; border: none; cursor: pointer; background: var(--bg-secondary);">
+          <!-- Secundario: Consultar -->
+          <button id="btn-consultar" class="transition-normal" style="padding: var(--space-xl); text-align: left; border: none; cursor: pointer; border-radius: var(--radius-xl);">
             <div class="flex items-center gap-lg">
-              <div class="bg-primary p-md rounded-lg flex items-center justify-center" style="min-width: 56px; height: 56px;">
+              <div class="icon-wrap p-md rounded-lg flex items-center justify-center" style="min-width: 56px; height: 56px;">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" stroke="white" stroke-width="2"/>
-                  <circle cx="12" cy="10" r="3" stroke="white" stroke-width="2"/>
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" stroke="currentColor" stroke-width="2"/>
+                  <circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="2"/>
                 </svg>
               </div>
               <div class="flex-1">
                 <h3 class="text-lg font-semibold text-primary mb-xs">Consultar</h3>
                 <p class="text-sm text-secondary">Revisa el estado actual de los mapas</p>
               </div>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="opacity: 0.4; flex-shrink: 0;">
+                <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
             </div>
           </button>
         </div>
         
         <!-- Footer -->
-        <footer class="text-center mt-xl">
+        <footer class="home-footer text-center mt-xl">
           <p class="text-sm text-muted">Versión 2.1.0 • Sistema Territorial JW</p>
         </footer>
       </main>

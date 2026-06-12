@@ -1,0 +1,151 @@
+/* ===================================================================
+   MAPA.CSS — Estilos específicos del Mapa Territorial
+   Extraído desde mapa.html para mantener separación de preocupaciones
+   =================================================================== */
+
+/* === LAYOUT DE CUADRÍCULA DEL MAPA === */
+.mapa-layout-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: var(--space-lg);
+  align-items: start;
+  margin-bottom: var(--space-lg);
+  width: 100%;
+}
+
+.mapa-col-principal {
+  min-width: 0;
+}
+
+.mapa-col-formulario {
+  position: sticky;
+  top: 20px;
+}
+
+@media (max-width: 960px) {
+  .mapa-layout-grid {
+    grid-template-columns: 1fr;
+  }
+  .mapa-col-formulario {
+    position: static;
+  }
+}
+
+/* === LEYENDA DEL MAPA — clases semánticas (reemplazan estilos inline) === */
+.legend-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.legend-dot--pending {
+  background: rgba(255, 77, 77, 0.65);
+  border: 2px solid rgba(255, 77, 77, 0.9);
+}
+
+.legend-dot--done {
+  background: rgba(39, 174, 96, 0.65);
+  border: 2px solid rgba(39, 174, 96, 0.95);
+}
+
+.legend-dot--selected {
+  background: rgba(41, 128, 185, 0.75);
+  border: 2px solid rgba(41, 128, 185, 1);
+}
+
+.legend-dot--sel-done {
+  background: rgba(211, 84, 0, 0.75);
+  border: 2px solid rgba(211, 84, 0, 1);
+}
+
+/* === BOTÓN DE ÍCONO (info de estado) === */
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  background: var(--bg-surface);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.icon-button:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border-color: var(--border-light);
+}
+
+.icon-button:focus {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+/* === TOOLTIP BURBUJA DE ESTADOS === */
+.tooltip-bubble {
+  position: absolute;
+  top: -9999px;
+  left: -9999px;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 1000;
+  min-width: 260px;
+  max-width: min(90vw, 360px);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08), 0 3px 6px rgba(0, 0, 0, 0.06);
+  border-radius: 10px;
+  transform: translateY(-6px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.tooltip-bubble.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.tooltip-bubble::after {
+  content: '';
+  position: absolute;
+  top: -7px;
+  left: 18px;
+  width: 12px;
+  height: 12px;
+  background: inherit;
+  border-left: 1px solid var(--border-color);
+  border-top: 1px solid var(--border-color);
+  transform: rotate(45deg);
+}
+
+.tooltip-bubble__content {
+  padding: 10px 12px;
+}
+
+.tooltip-bubble__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0;
+}
+
+.tooltip-text {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.tooltip-badge {
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 2px 8px;
+  border: 1px solid transparent;
+}
+
+.tooltip-badge--start    { color: #1f2937; background: #e5e7eb; border-color: #d1d5db; }
+.tooltip-badge--progress { color: #1e40af; background: #dbeafe; border-color: #bfdbfe; }
+.tooltip-badge--done     { color: #065f46; background: #d1fae5; border-color: #a7f3d0; }

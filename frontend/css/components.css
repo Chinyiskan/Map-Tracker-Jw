@@ -3,6 +3,81 @@
    Componentes reutilizables para toda la aplicación
    =================================================================== */
 
+/* ===================================================================
+   ANIMACIONES DE ENTRADA
+   fadeInUp escalonado para cards, listas y botones de barrio
+   Respeta la preferencia del sistema: prefers-reduced-motion
+   =================================================================== */
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Clase reutilizable para aplicar en JS o HTML */
+.animate-in {
+  animation: fadeInUp 0.3s ease both;
+}
+
+/* --- Cards con animación automática --- */
+@media (prefers-reduced-motion: no-preference) {
+  .card {
+    animation: fadeInUp 0.35s ease both;
+  }
+
+  /* Delays escalonados: máximo impacto en grids y listas */
+  .card:nth-child(1) { animation-delay:   0ms; }
+  .card:nth-child(2) { animation-delay:  70ms; }
+  .card:nth-child(3) { animation-delay: 140ms; }
+  .card:nth-child(4) { animation-delay: 210ms; }
+  .card:nth-child(5) { animation-delay: 280ms; }
+  .card:nth-child(n+6) { animation-delay: 350ms; }
+
+  /* --- Botones de barrio en rejilla --- */
+  .btn-barrio {
+    animation: fadeInUp 0.3s ease both;
+  }
+
+  .btn-barrio:nth-child(1)  { animation-delay:   0ms; }
+  .btn-barrio:nth-child(2)  { animation-delay:  50ms; }
+  .btn-barrio:nth-child(3)  { animation-delay: 100ms; }
+  .btn-barrio:nth-child(4)  { animation-delay: 150ms; }
+  .btn-barrio:nth-child(5)  { animation-delay: 200ms; }
+  .btn-barrio:nth-child(6)  { animation-delay: 250ms; }
+  .btn-barrio:nth-child(7)  { animation-delay: 300ms; }
+  .btn-barrio:nth-child(8)  { animation-delay: 350ms; }
+  .btn-barrio:nth-child(n+9) { animation-delay: 400ms; }
+
+  /* --- Tarjetas de capitán en grid --- */
+  .capitan-card-compact {
+    animation: fadeInUp 0.3s ease both;
+  }
+
+  .capitan-card-compact:nth-child(1) { animation-delay:   0ms; }
+  .capitan-card-compact:nth-child(2) { animation-delay:  60ms; }
+  .capitan-card-compact:nth-child(3) { animation-delay: 120ms; }
+  .capitan-card-compact:nth-child(4) { animation-delay: 180ms; }
+  .capitan-card-compact:nth-child(n+5) { animation-delay: 240ms; }
+}
+
+/* Sin movimiento para usuarios con sensibilidad al movimiento */
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .btn-barrio,
+  .capitan-card-compact,
+  .animate-in {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
 /* === DASHBOARD CARDS === */
 .dashboard-cards {
   display: flex;
@@ -437,7 +512,7 @@
   color: white;
 }
 
-/* === LOADING STATES === */
+/* === LOADING STATES (Skeleton) === */
 .skeleton {
   background: linear-gradient(
     90deg,
